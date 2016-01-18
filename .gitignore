@@ -1,0 +1,8 @@
+.project
+.idea
+*.iml
+*.tmp
+*.memprof
+*.pprof
+pkg
+bin
