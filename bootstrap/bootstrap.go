@@ -18,7 +18,7 @@ func Bootstrap(c *cli.Context){
 
 func GetConfigFileName() (string, error){
 	if configFile=="" {
-		return nil, errors.New("Bootstrap configFile path has not set.")
+		return "", errors.New("Bootstrap configFile path has not set.")
 	}
 	return configFile, nil
 }
