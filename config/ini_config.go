@@ -1,14 +1,14 @@
 package config
 
 import (
-	"zooinit/log"
 	"github.com/go-ini/ini"
+	"log"
 )
 
 func Ini(path string)(*ini.File){
 	cfg, err := ini.Load(path)
 	if err!=nil {
-		log.Logger().Fatalln(err)
+		log.Panic(err)
 	}
 
 	return cfg

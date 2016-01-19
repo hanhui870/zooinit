@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 	"errors"
+	"fmt"
+	"path/filepath"
 )
 
 // 有缓存的FileLog适配器
@@ -31,15 +33,20 @@ const (
 	DEFAULT_TTL = 3 * time.Second
 )
 
-func NewFileLog(filepath string) (*FileLog, error) {
-	filepath = strings.Trim(filepath, "")
-	if filepath == "" {
-		return nil, &os.PathError{"open", filepath, errors.New("File path empty.")}
+func NewFileLog(logpath string) (*FileLog, error) {
+	logpath = strings.Trim(logpath, "")
+	if logpath == "" {
+		return nil, &os.PathError{"open", logpath, errors.New("File path empty.")}
 	}
 
-	file, err := os.OpenFile(filepath, os.O_CREATE | os.O_APPEND | os.O_RDWR | os.O_SYNC, 0660)
+	err:=os.MkdirAll(filepath.Dir(logpath), 0777)
 	if err != nil {
-		return nil, &os.PathError{"open", filepath, err}
+		return nil, &os.PathError{"create dir", logpath, err}
+	}
+
+	file, err := os.OpenFile(logpath, os.O_CREATE | os.O_APPEND | os.O_RDWR | os.O_SYNC, 0660)
+	if err != nil {
+		return nil, &os.PathError{"open", logpath, err}
 	}
 	// Colose File needed.
 	defer file.Close()
@@ -50,6 +57,11 @@ func NewFileLog(filepath string) (*FileLog, error) {
 	go logger.backgroundSaveWorker()
 
 	return logger, nil
+}
+
+func GenerateFileLogPathName(path, service string)(string)  {
+	date:=time.Now()
+	return fmt.Sprintf("%s/%s.%v.log", path, service, date.Format("2006-01-02"))
 }
 
 func (f *FileLog) Write(b []byte) (n int, err error) {
