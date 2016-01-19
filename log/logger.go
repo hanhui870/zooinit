@@ -2,7 +2,6 @@ package log
 
 import (
 	"log"
-	"io"
 	"os"
 )
 
@@ -11,9 +10,7 @@ var(
 )
 
 func init (){
-	writer:=io.MultiWriter(os.Stdout)
-
-	defaultLogger= log.New(writer, "", log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
+	defaultLogger= log.New(os.Stdout, "", log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
 }
 
 func Logger() (*log.Logger){
