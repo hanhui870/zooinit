@@ -57,13 +57,6 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 		log.Fatalln("Config of discovery need ip:port:peer format.")
 	}
 	obj.discoveryHost = discovery[0:strings.Index(discovery, ":")]
-
-	if utility.HasIpAddress(obj.discoveryHost) {
-		obj.isSelfIp = true
-	}else {
-		obj.isSelfIp = false
-	}
-
 	obj.discoveryPort = discovery[strings.Index(discovery, ":") + 1:strings.LastIndex(discovery, ":")]
 	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":") + 1:]
 
@@ -93,6 +86,20 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	obj.cmd = sec.Key("boot.cmd").String()
 	if obj.cmd == "" {
 		log.Fatalln("Config of boot.cmd is empty.")
+	}
+
+	// Init Extra runtime info
+	if utility.HasIpAddress(obj.discoveryHost) {
+		obj.isSelfIp = true
+		obj.localIP=obj.discoveryHost
+	}else {
+		obj.isSelfIp = false
+
+		localip, err:=utility.GetLocalIPWithIntranet(obj.discoveryHost)
+		if err!=nil {
+			obj.logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
+		}
+		obj.localIP=localip
 	}
 
 	return obj
