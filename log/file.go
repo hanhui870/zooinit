@@ -224,9 +224,9 @@ func (f *FileLog) backgroundSaveWorker() (error) {
 		select {
 		case writeSignal := <-f.syncChan:
 			if writeSignal == WRITE_SIGNAL {
-				if f.buf.Len()>f.max {
-					_, err:=f.sync()
-					if err!=nil {
+				if f.buf.Len() > f.max {
+					_, err := f.sync()
+					if err != nil {
 						panic(err)
 					}
 				}
@@ -235,8 +235,8 @@ func (f *FileLog) backgroundSaveWorker() (error) {
 		case writeSignal := <-timeChan:
 			if writeSignal == WRITE_SIGNAL {
 				fmt.Println("receive write signal:", writeSignal)
-				_, err:=f.sync()
-				if err!=nil {
+				_, err := f.sync()
+				if err != nil {
 					panic(err)
 				}
 			}

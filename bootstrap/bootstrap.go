@@ -1,17 +1,34 @@
 package bootstrap
 
 import (
-	"github.com/codegangsta/cli"
 	"log"
-	"path/filepath"
 	"os"
+
+	"github.com/go-ini/ini"
+	"github.com/codegangsta/cli"
+
+	"path/filepath"
+	"zooinit/config"
+)
+
+const (
+	CONFIG_SECTION = "system.boostrap"
+)
+
+var (
+	env *envInfo
 )
 
 func Bootstrap(c *cli.Context) {
 	fname := GetConfigFileName(c.String("config"))
+	iniobj := GetConfigInstance(fname)
 
+	env=NewEnvInfo(iniobj)
+}
 
-
+// Fetch bootstrap env instance
+func GetEnvInfo()(*envInfo){
+	return env
 }
 
 func GetConfigFileName(configfile string) (string) {
@@ -25,12 +42,17 @@ func GetConfigFileName(configfile string) (string) {
 	}
 	log.Println("Use configuration file:", fname)
 
-	_, err = os.Stat(fname)
+	return fname
+}
+
+func GetConfigInstance(fname string) (*ini.File) {
+	_, err := os.Stat(fname)
 	if os.IsNotExist(err) {
 		log.Fatalln("Configuration file:", err)
 	}
 
-	return fname
+	iniInstance := config.Ini(fname)
+	return iniInstance
 }
 
 
