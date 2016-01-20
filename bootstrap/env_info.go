@@ -3,14 +3,16 @@ package bootstrap
 import (
 	"time"
 	"log"
+	"net"
 
 	"github.com/go-ini/ini"
 	"strings"
 
 	loglocal "zooinit/log"
+	"zooinit/utility"
 )
 
-//This basic discovery service bootstrap env info
+// This basic discovery service bootstrap env info
 type envInfo struct {
 	//service name, also use for log
 	service       string
@@ -18,18 +20,23 @@ type envInfo struct {
 	discoveryPort string
 	discoveryPeer string
 
+	// whether discoveryHost is the machine running program owns
+	isSelfIp      bool
 
-	//cluster totol qurorum
+	//localIP for boot
+	localIP       net.IP
+
+	// cluster totol qurorum
 	qurorum       int
-	//sec unit
+	// sec unit
 	timeout       time.Duration
 
 	logPath       string
 
-	//Logger instance for service
+	// Logger instance for service
 	logger        *log.Logger
 
-	//boot command
+	// boot command
 	cmd           string
 }
 
@@ -50,6 +57,13 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 		log.Fatalln("Config of discovery need ip:port:peer format.")
 	}
 	obj.discoveryHost = discovery[0:strings.Index(discovery, ":")]
+
+	if utility.HasIpAddress(obj.discoveryHost) {
+		obj.isSelfIp = true
+	}else {
+		obj.isSelfIp = false
+	}
+
 	obj.discoveryPort = discovery[strings.Index(discovery, ":") + 1:strings.LastIndex(discovery, ":")]
 	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":") + 1:]
 
