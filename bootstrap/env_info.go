@@ -91,7 +91,7 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	// Init Extra runtime info
 	if utility.HasIpAddress(obj.discoveryHost) {
 		obj.isSelfIp = true
-		obj.localIP=obj.discoveryHost
+		obj.localIP=net.ParseIP(obj.discoveryHost)
 	}else {
 		obj.isSelfIp = false
 
