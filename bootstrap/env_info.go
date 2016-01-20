@@ -16,6 +16,8 @@ type envInfo struct {
 	service       string
 	discoveryHost string
 	discoveryPort string
+	discoveryPeer string
+
 
 	//cluster totol qurorum
 	qurorum       int
@@ -26,6 +28,9 @@ type envInfo struct {
 
 	//Logger instance for service
 	logger        *log.Logger
+
+	//boot command
+	cmd           string
 }
 
 func NewEnvInfo(iniobj *ini.File) (*envInfo) {
@@ -41,11 +46,12 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	if discovery == "" {
 		log.Fatalln("Config of discovery is empty.")
 	}
-	if strings.Index(discovery, ":") == -1 {
-		log.Fatalln("Config of discovery need ip:port format.")
+	if strings.Count(discovery, ":") != 2 {
+		log.Fatalln("Config of discovery need ip:port:peer format.")
 	}
 	obj.discoveryHost = discovery[0:strings.Index(discovery, ":")]
-	obj.discoveryPort = discovery[strings.Index(discovery, ":") + 1:]
+	obj.discoveryPort = discovery[strings.Index(discovery, ":") + 1:strings.LastIndex(discovery, ":")]
+	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":") + 1:]
 
 	qurorum, err := sec.Key("qurorum").Int()
 	if err != nil {
@@ -67,8 +73,63 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 		log.Fatalln("Config of log.path is empty.")
 	}
 
-	obj.logger=loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	obj.logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
 	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
+
+	obj.cmd = sec.Key("boot.cmd").String()
+	if obj.cmd == "" {
+		log.Fatalln("Config of boot.cmd is empty.")
+	}
 
 	return obj
 }
+
+// Fetch bootstrap command
+func (e *envInfo) GetCmd() (string) {
+	if e == nil {
+		return ""
+	}
+
+	return e.cmd
+}
+
+func (e *envInfo) GetQurorum() (int) {
+	if e == nil {
+		return 0
+	}
+
+	return e.qurorum
+}
+
+func (e *envInfo) GetTimeout() (time.Duration) {
+	if e == nil {
+		return 0
+	}
+
+	return e.timeout
+}
+
+func (e *envInfo) GetService() (string) {
+	if e == nil {
+		return ""
+	}
+
+	return e.service
+}
+
+func (e *envInfo) GetDiscoveryHost() (string) {
+	if e == nil {
+		return ""
+	}
+
+	return e.discoveryHost
+}
+
+func (e *envInfo) GetDiscoveryPort() (string) {
+	if e == nil {
+		return ""
+	}
+
+	return e.discoveryPort
+}
+
