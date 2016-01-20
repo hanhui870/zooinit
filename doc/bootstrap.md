@@ -7,4 +7,9 @@
 
 ## Bootstrap
 
-zooinit boot|bootstrap 172.17.0.1:
+zooinit boot|bootstrap -f config/config.ini
+
+
+## Bootstrap Cluster
+
+zooinit cluster -f config/config.ini clustername

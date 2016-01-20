@@ -3,22 +3,34 @@ package bootstrap
 import (
 	"github.com/codegangsta/cli"
 	"log"
-	"errors"
+	"path/filepath"
+	"os"
 )
 
-var(
-	configFile string
-)
+func Bootstrap(c *cli.Context) {
+	fname := GetConfigFileName(c.String("config"))
 
-func Bootstrap(c *cli.Context){
-	if len(c.Args())!=1 {
-		log.Fatalln("bootstrap.Bootstrap: discovery_service_ip:port arg needed.")
-	}
+
+
 }
 
-func GetConfigFileName() (string, error){
-	if configFile=="" {
-		return "", errors.New("Bootstrap configFile path has not set.")
+func GetConfigFileName(configfile string) (string) {
+	if configfile == "" {
+		log.Fatalln("Bootstrap configFile path has not set.")
 	}
-	return configFile, nil
+
+	fname, err := filepath.Abs(configfile)
+	if err != nil {
+		log.Fatalln("Fetch Abs config file error:", err)
+	}
+	log.Println("Use configuration file:", fname)
+
+	_, err = os.Stat(fname)
+	if os.IsNotExist(err) {
+		log.Fatalln("Configuration file:", err)
+	}
+
+	return fname
 }
+
+
