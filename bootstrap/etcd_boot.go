@@ -2,6 +2,8 @@ package bootstrap
 
 import (
 	"os/exec"
+
+	"zooinit/utility"
 )
 
 func BootstrapEtcd(env *envInfo) (error) {
@@ -18,10 +20,28 @@ func BootstrapEtcd(env *envInfo) (error) {
 		intExecCmd := env.cmd + " -name " + "etcd.initial" +
 		" -initial-advertise-peer-urls " + internalPeerUrl +
 		" -listen-peer-urls " + internalPeerUrl +
-		" -listen-client-urls http://127.0.0.1:2379," + internalClientUrl +
+		" -listen-client-urls " + internalClientUrl +
 		" -advertise-client-urls " + internalClientUrl
 
 		env.logger.Println("Etcd Internal ExecCmd:", intExecCmd)
+
+		// Boot internal discovery service
+		path, args, err:=utility.ParseCmdStringWithParams(intExecCmd)
+		if err!=nil {
+			env.logger.Fatalln("Error ParseCmdStringWithParams:", err)
+		}
+
+		cmd:=exec.Command(path, args...)
+		err=cmd.Start()
+		defer cmd.Process.Release()
+
+		if err!=nil {
+			env.logger.Fatalln("Exec Internal ExecCmd Error:", err)
+		}else{
+			env.logger.Println("Exec Internal OK, PID:", cmd.Process.Pid)
+			// Set PID
+			env.internalPid=cmd.Process.Pid
+		}
 	}
 
 	// Cluster member startup info
@@ -40,7 +60,9 @@ func BootstrapEtcd(env *envInfo) (error) {
 
 
 	// Boot internal discovery service
-	exec.Cmd{}
+	//path, args:=utility.ParseCmdStringWithParams(disExecCmd)
+
+
 
 
 

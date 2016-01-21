@@ -27,6 +27,10 @@ type envInfo struct {
 	internalPort  string
 	internalPeer  string
 
+	// internal Boot PID
+	// defalut 0
+	internalPid   int
+
 	// whether internalHost is the machine running program owns
 	isSelfIp      bool
 
@@ -78,6 +82,7 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	obj.internalHost = obj.discoveryHost
 	obj.internalPort = internal[0:strings.Index(internal, ":")]
 	obj.internalPeer = internal[strings.LastIndex(internal, ":") + 1:]
+	obj.internalPid=0
 
 	qurorum, err := sec.Key("qurorum").Int()
 	if err != nil {
