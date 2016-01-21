@@ -60,16 +60,15 @@ func TestParseCmdStringWithParams(t *testing.T) {
 	testCases := []tests{
 		{in:"start", out:testout{path:"start", args:nil}},
 		{in:"start -name hello", out:testout{path:"start", args:[]string{"-name", "hello"}}},
-		{in:"start -name \"hello\"", out:testout{path:"start", args:[]string{"-name", "\"hello\""}}},
-		{in:"start -name \"hello world\"", out:testout{path:"start", args:[]string{"-name", "\"hello world\""}}},
+		{in:"start -name \"hello\"", out:testout{path:"start", args:[]string{"-name", "hello"}}},
+		{in:"start -name \"hello world\"", out:testout{path:"start", args:[]string{"-name", "hello world"}}},
 	}
 
 	for _, testCase := range testCases {
-		path, args := ParseCmdStringWithParams(testCase.in)
+		path, args, err := ParseCmdStringWithParams(testCase.in)
 
-
-		if path != testCase.out.path || !reflect.DeepEqual(args, testCase.out.args) {
-			t.Error("Test failed for:", testCase, " result:", args)
+		if err!=nil || path != testCase.out.path || !reflect.DeepEqual(args, testCase.out.args) {
+			t.Error("Test failed for:", testCase,"path:", path, "result:", args)
 		}
 	}
 }
@@ -103,4 +102,7 @@ func TestStringSlice(t *testing.T) {
 			t.Log("Next round start At:", start)
 		}
 	}
+
+	str="fdsafda "
+	t.Log("String trim of `fdsafda `:", strings.Trim(str, " fa"))
 }

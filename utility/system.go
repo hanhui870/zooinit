@@ -86,6 +86,7 @@ func MaskOFIpAddress(findip string) (net.IPMask) {
 }
 
 // Fetch the IP which is in the same intranet with findip
+// Remove quote symbol
 func GetLocalIPWithIntranet(findip string) (net.IP, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -113,23 +114,102 @@ func GetLocalIPWithIntranet(findip string) (net.IP, error) {
 }
 
 // Need to improve for quoted string
-func ParseCmdStringWithParams(cmd string) (path string, args []string) {
+func ParseCmdStringWithParams(cmd string) (path string, args []string, err error) {
 	delimeter := " \t"
-	if strings.ContainsAny(cmd, delimeter) {
-		// First one is the choise of delimeter
-		for i := 1; i < len(delimeter); i++ {
-			cmd = strings.Replace(cmd, string(delimeter[i]), string(delimeter[0]), -1)
-		}
-		arrSplit := strings.Split(cmd, string(delimeter[0]))
-		path=arrSplit[0]
+	cmd = strings.Trim(cmd, delimeter)
 
-		for i := 1; i < len(arrSplit); i++ {
-			args=append(args, arrSplit[i])
-		}
+	quoted := `"'`
+	length := len(cmd)
 
-		return path, args
-	}else {
-		//only command
-		return cmd, nil
+	const (
+		BLOCK_CMD = iota
+		BLOCK_QUOTED
+		BLOCK_ARG
+		BLOCK_UNDEFINED
+	)
+
+	blockNow := BLOCK_UNDEFINED
+	blockStart := -1
+	for i := 0; i < length; i++ {
+
+		if i == 0 {
+			blockNow = BLOCK_CMD
+			blockStart = 0
+			continue
+
+		}else if strings.ContainsAny(delimeter, string(cmd[i])) { //end of slice[start:end] no need minus 1
+			if blockNow == BLOCK_UNDEFINED {
+				blockStart = i + 1
+				blockNow = BLOCK_ARG
+
+			}else if blockNow == BLOCK_ARG {
+				args = append(args, cmd[blockStart:i])
+				//reset
+				blockStart = -1
+				blockNow = BLOCK_UNDEFINED
+
+			}else if blockNow == BLOCK_CMD {
+				path = cmd[blockStart:i]
+				//reset
+				blockStart = -1
+				blockNow = BLOCK_UNDEFINED
+
+			}else if blockNow == BLOCK_QUOTED {
+				//ignore blank in the text
+			}
+
+			continue
+
+		}else if strings.ContainsAny(quoted, string(cmd[i])) {
+			if blockNow == BLOCK_UNDEFINED {
+				blockStart = i + 1
+				blockNow = BLOCK_QUOTED
+
+			}else if blockNow == BLOCK_QUOTED {
+				if blockStart == -1 {
+					return "", nil, errors.New("Run time error, blockStart")
+				}
+				//Fetch args
+				args = append(args, cmd[blockStart:i])
+				//reset
+				blockStart = -1
+				blockNow = BLOCK_UNDEFINED
+
+			}else if blockNow == BLOCK_CMD {
+				return "", nil, errors.New("Command path should not start with Quoted string.")
+
+			}else if blockNow == BLOCK_ARG {
+				if blockStart == i {
+					blockStart = i + 1
+					blockNow = BLOCK_QUOTED
+				}else {
+					return "", nil, errors.New("Command arg could not hash Quoted string in the middle.")
+				}
+			}
+
+			continue
+
+		}else if i == length - 1 {
+			if blockNow == BLOCK_UNDEFINED {
+				return "", nil, errors.New("Reach end but block undefined.")
+
+			}else if blockNow == BLOCK_ARG {
+				args = append(args, cmd[blockStart:])
+
+			}else if blockNow == BLOCK_CMD {
+				path = cmd[blockStart:]
+
+			}else {
+				return "", nil, errors.New("BLOCK_QUOTED end exception.")
+			}
+		}else {
+			//char
+			if blockNow == BLOCK_UNDEFINED {
+				blockStart = i //this char
+				blockNow = BLOCK_ARG
+			}
+		}
 	}
+
+	return path, args, nil
 }
