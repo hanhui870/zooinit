@@ -80,7 +80,7 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 		log.Fatalln("Config of log.path is empty.")
 	}
 
-	obj.logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
 	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
 
 	obj.cmd = sec.Key("boot.cmd").String()
