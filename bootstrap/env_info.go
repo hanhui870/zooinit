@@ -27,7 +27,7 @@ type envInfo struct {
 	internalPort  string
 	internalPeer  string
 
-	// whether discoveryHost is the machine running program owns
+	// whether internalHost is the machine running program owns
 	isSelfIp      bool
 
 	//localIP for boot
@@ -69,13 +69,14 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 
 	internal := sec.Key("internal").String()
 	if internal == "" {
-		log.Fatalln("Config of discovery is empty.")
+		log.Fatalln("Config of internal is empty.")
 	}
-	if strings.Count(internal, ":") != 2 {
-		log.Fatalln("Config of discovery need ip:port:peer format.")
+	if strings.Count(internal, ":") != 1 {
+		log.Fatalln("Config of internal need port:peer format.")
 	}
-	obj.internalHost = internal[0:strings.Index(internal, ":")]
-	obj.internalPort = internal[strings.Index(internal, ":") + 1:strings.LastIndex(internal, ":")]
+	// Must be identical with discoveryHost
+	obj.internalHost = obj.discoveryHost
+	obj.internalPort = internal[0:strings.Index(internal, ":")]
 	obj.internalPeer = internal[strings.LastIndex(internal, ":") + 1:]
 
 	qurorum, err := sec.Key("qurorum").Int()
@@ -107,18 +108,20 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	}
 
 	// Init Extra runtime info
-	if utility.HasIpAddress(obj.discoveryHost) {
+	if utility.HasIpAddress(obj.internalHost) {
 		obj.isSelfIp = true
-		obj.localIP = net.ParseIP(obj.discoveryHost)
+		obj.localIP = net.ParseIP(obj.internalHost)
 	}else {
 		obj.isSelfIp = false
 
-		localip, err := utility.GetLocalIPWithIntranet(obj.discoveryHost)
+		localip, err := utility.GetLocalIPWithIntranet(obj.internalHost)
 		if err != nil {
 			obj.logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
 		}
 		obj.localIP = localip
 	}
+
+
 
 	return obj
 }

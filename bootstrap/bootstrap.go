@@ -25,7 +25,7 @@ func Bootstrap(c *cli.Context) {
 
 	env=NewEnvInfo(iniobj)
 
-	log.Println(env.cmd)
+	BootstrapEtcd(env)
 }
 
 // Fetch bootstrap env instance
