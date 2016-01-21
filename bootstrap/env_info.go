@@ -16,9 +16,16 @@ import (
 type envInfo struct {
 	//service name, also use for log
 	service       string
+
+	// Bootstrap etcd cluster service for boot other cluster service.
 	discoveryHost string
 	discoveryPort string
 	discoveryPeer string
+
+	// Used for internal bootstrap for system, Only one member.
+	internalHost  string
+	internalPort  string
+	internalPeer  string
 
 	// whether discoveryHost is the machine running program owns
 	isSelfIp      bool
@@ -60,6 +67,17 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	obj.discoveryPort = discovery[strings.Index(discovery, ":") + 1:strings.LastIndex(discovery, ":")]
 	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":") + 1:]
 
+	internal := sec.Key("internal").String()
+	if internal == "" {
+		log.Fatalln("Config of discovery is empty.")
+	}
+	if strings.Count(internal, ":") != 2 {
+		log.Fatalln("Config of discovery need ip:port:peer format.")
+	}
+	obj.internalHost = internal[0:strings.Index(internal, ":")]
+	obj.internalPort = internal[strings.Index(internal, ":") + 1:strings.LastIndex(internal, ":")]
+	obj.internalPeer = internal[strings.LastIndex(internal, ":") + 1:]
+
 	qurorum, err := sec.Key("qurorum").Int()
 	if err != nil {
 		log.Fatalln("Config of qurorum is error:", err)
@@ -91,15 +109,15 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	// Init Extra runtime info
 	if utility.HasIpAddress(obj.discoveryHost) {
 		obj.isSelfIp = true
-		obj.localIP=net.ParseIP(obj.discoveryHost)
+		obj.localIP = net.ParseIP(obj.discoveryHost)
 	}else {
 		obj.isSelfIp = false
 
-		localip, err:=utility.GetLocalIPWithIntranet(obj.discoveryHost)
-		if err!=nil {
+		localip, err := utility.GetLocalIPWithIntranet(obj.discoveryHost)
+		if err != nil {
 			obj.logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
 		}
-		obj.localIP=localip
+		obj.localIP = localip
 	}
 
 	return obj
