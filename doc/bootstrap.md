@@ -37,6 +37,9 @@ zooinit cluster -f config/config.ini clustername
         -listen-peer-urls http://192.168.4.108:2380 \
         -listen-client-urls http://127.0.0.1:2379,http://192.168.4.108:2379 \
         -advertise-client-urls http://192.168.4.108:2379
+
+        //config cluster qurorum size
+        curl -X PUT http://192.168.4.108:2379/v2/keys/_etcd/registry/fdsafdsafdsafdsa/_config/size -d value=${cluster_size}
     2. Boot First one 192.168.4.220
         etcd -name etcd.bootstrap.220 --data-dir /tmp/etcd/data -wal-dir /tmp/etcd/wal \
         -initial-advertise-peer-urls http://192.168.4.220:2380 \
