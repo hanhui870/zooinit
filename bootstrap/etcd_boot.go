@@ -17,6 +17,7 @@ func BootstrapEtcd(env *envInfo) (error) {
 		env.logger.Println("Etcd Internal PeerUrl:", internalPeerUrl)
 		env.logger.Println("Etcd Internal ClientUrl:", internalClientUrl)
 
+		// Add & can't fast wait
 		intExecCmd := env.cmd + " -name " + "etcd.initial" +
 		" -initial-advertise-peer-urls " + internalPeerUrl +
 		" -listen-peer-urls " + internalPeerUrl +
@@ -33,14 +34,17 @@ func BootstrapEtcd(env *envInfo) (error) {
 
 		cmd:=exec.Command(path, args...)
 		err=cmd.Start()
-		defer cmd.Process.Release()
 
 		if err!=nil {
 			env.logger.Fatalln("Exec Internal ExecCmd Error:", err)
 		}else{
 			env.logger.Println("Exec Internal OK, PID:", cmd.Process.Pid)
+
 			// Set PID
-			env.internalPid=cmd.Process.Pid
+			env.internalCmdInstance=cmd
+			env.logger.Println("Internal service started.")
+
+
 		}
 	}
 
