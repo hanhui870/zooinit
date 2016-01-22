@@ -69,3 +69,4 @@ zooinit cluster -f config/config.ini clustername
     A: etcd -name etcd.bootstrap.220 the name must be different.
 
     Q: 2016-01-21 12:13:52.381145 E | rafthttp: request sent was ignored (cluster ID mismatch: remote[e5fb7fff54887bea]=7e27652122e8b2ae, local=7021b573b4e69e)
+    A: Need to service, localip want to be member of bootstrap cluster, initial discovery service need to be other ports.
