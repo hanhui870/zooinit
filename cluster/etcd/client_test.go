@@ -53,7 +53,7 @@ func TestClusterApi(t *testing.T) {
 	resp, err:=api.Conn().Delete(context.Background(), "/haimi/service/discover", nil)
 	if err != nil {
 		//may not exist
-		t.Logf("Delete Error /haimi/service/discover:", err)
+		t.Log("Delete Error /haimi/service/discover:", err)
 	}else{
 		t.Logf("Delete /haimi/service/discover: %q", resp)
 	}

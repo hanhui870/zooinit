@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/client"
+	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 type Api struct {
@@ -11,6 +12,7 @@ type Api struct {
 }
 
 // Cluster no points need
+// Stat can't use this method, Struct mismatch
 func NewApi(endpoints []string) (*Api, error) {
 	cfg := client.Config{
 		Endpoints:               endpoints,
@@ -33,4 +35,8 @@ func (a *Api) Conn() (client.KeysAPI){
 	}
 
 	return a.conn
+}
+
+func Context() (context.Context){
+	return context.Background()
 }
