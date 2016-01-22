@@ -156,12 +156,28 @@ func (e *envInfo) GetTimeout() (time.Duration) {
 	return e.timeout
 }
 
-func (e *envInfo) GetService() (string) {
+func (e *envInfo) Service() (string) {
 	if e == nil {
 		return ""
 	}
 
 	return e.service
+}
+
+func (e *envInfo) Logger() (*log.Logger) {
+	if e == nil {
+		return ""
+	}
+
+	return e.logger
+}
+
+func (e *envInfo) LocalIP() (net.IP) {
+	if e == nil {
+		return ""
+	}
+
+	return e.localIP
 }
 
 func (e *envInfo) GetDiscoveryHost() (string) {
