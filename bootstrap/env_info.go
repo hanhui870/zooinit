@@ -52,6 +52,13 @@ type envInfo struct {
 	cmd           string
 }
 
+// New env from file
+func NewEnvInfoFile (fname string) (*envInfo) {
+	iniobj := GetConfigInstance(fname)
+
+	return NewEnvInfo(iniobj)
+}
+
 func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	obj := new(envInfo)
 
@@ -166,7 +173,7 @@ func (e *envInfo) Service() (string) {
 
 func (e *envInfo) Logger() (*log.Logger) {
 	if e == nil {
-		return ""
+		return nil
 	}
 
 	return e.logger
@@ -174,7 +181,7 @@ func (e *envInfo) Logger() (*log.Logger) {
 
 func (e *envInfo) LocalIP() (net.IP) {
 	if e == nil {
-		return ""
+		return nil
 	}
 
 	return e.localIP
