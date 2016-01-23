@@ -33,14 +33,14 @@ func TestFetchIPList(t *testing.T) {
 
 	ip, err = GetLocalIPWithIntranet("192.168.4.199")
 	if err != nil {
-		t.Error("GetLocalIPWithIntranet of 192.168.4.199:", err)
+		t.Log("GetLocalIPWithIntranet of 192.168.4.199 Error:", err)
 	}else {
 		t.Log("Find the smae intranet of 192.168.4.199: ", ip)
 	}
 
 	ip, err = GetLocalIPWithIntranet("192.168.1.4")
 	if err != nil {
-		t.Log("GetLocalIPWithIntranet of 192.168.1.4:", err)
+		t.Log("GetLocalIPWithIntranet of 192.168.1.4 Error:", err)
 	}else {
 		t.Log("Find the smae intranet of 192.168.1.4: ", ip)
 	}
@@ -60,6 +60,11 @@ func TestParseCmdStringWithParams(t *testing.T) {
 	testCases := []tests{
 		{in:"start", out:testout{path:"start", args:nil}},
 		{in:"start -name hello", out:testout{path:"start", args:[]string{"-name", "hello"}}},
+		// not support ' quote
+		{in:"start -name 'hello", out:testout{path:"start", args:[]string{"-name", "'hello"}}},
+		{in:"start -name \\'hello", out:testout{path:"start", args:[]string{"-name", "'hello"}}},
+		{in:"start -name \\\"hello", out:testout{path:"start", args:[]string{"-name", "\"hello"}}},
+		{in:"s\\ tart -name \\\"hello", out:testout{path:"s tart", args:[]string{"-name", "\"hello"}}},
 		{in:"start -name \"hello\"", out:testout{path:"start", args:[]string{"-name", "hello"}}},
 		{in:"start -name \"hello world\"", out:testout{path:"start", args:[]string{"-name", "hello world"}}},
 	}
@@ -69,6 +74,8 @@ func TestParseCmdStringWithParams(t *testing.T) {
 
 		if err!=nil || path != testCase.out.path || !reflect.DeepEqual(args, testCase.out.args) {
 			t.Error("Test failed for:", testCase,"path:", path, "result:", args)
+		}else{
+			t.Log("Test success for:", testCase,"path:", path, "result:", args)
 		}
 	}
 }

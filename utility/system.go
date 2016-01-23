@@ -113,12 +113,15 @@ func GetLocalIPWithIntranet(findip string) (net.IP, error) {
 	return nil, errors.New("Not found.")
 }
 
-// Need to improve for quoted string
+// Improve for quoted string
 func ParseCmdStringWithParams(cmd string) (path string, args []string, err error) {
 	delimeter := " \t"
 	cmd = strings.Trim(cmd, delimeter)
 
-	quoted := `"'`
+	// "'" means char in go. not support.
+	// "`" has cmd exec meaning in shell. not support.
+	quoted := `"`
+	escaped := "\\"
 	length := len(cmd)
 
 	const (
@@ -130,7 +133,56 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 
 	blockNow := BLOCK_UNDEFINED
 	blockStart := -1
+
+	escapePos := -1
+	//escapeChar := byte(0) //null \t \n need special process
+
+	// Func for process escaped things.
+	doneEscapeFunc := func(str *string, start, end int) (string) {
+		// Can safely use escapePos, escapeChar
+		strNew := (*str)[start:end]
+
+		if escapePos != -1 {
+			println(escapePos, length, start)
+			if escapePos > length || escapePos < start {
+				panic("Never can happen. escapePos > length || escapePos < start")
+
+			}else {
+				rEscapePos := escapePos - start
+				strNew = strNew[:rEscapePos] + strNew[rEscapePos + 1:]
+
+			}
+
+			// must reset here
+			escapePos = -1
+		}
+
+		return strNew
+	}
+
 	for i := 0; i < length; i++ {
+		if strings.ContainsAny(escaped, string(cmd[i])) {
+			escapePos = i
+
+			if blockNow == BLOCK_UNDEFINED {
+				blockStart = i
+				if i==0 {
+					blockNow = BLOCK_CMD
+				}else{
+					blockNow = BLOCK_ARG
+				}
+			}
+
+			// ignore next
+			i = i + 1
+			// Can't be the laster char
+			if i >= length {
+				return "", nil, errors.New("Escape string can't be the laster char")
+			}
+			// escapeChar = cmd[i]
+
+			continue
+		}
 
 		if i == 0 {
 			blockNow = BLOCK_CMD
@@ -143,13 +195,13 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 				blockNow = BLOCK_ARG
 
 			}else if blockNow == BLOCK_ARG {
-				args = append(args, cmd[blockStart:i])
+				args = append(args, doneEscapeFunc(&cmd, blockStart, i))
 				//reset
 				blockStart = -1
 				blockNow = BLOCK_UNDEFINED
 
 			}else if blockNow == BLOCK_CMD {
-				path = cmd[blockStart:i]
+				path = doneEscapeFunc(&cmd, blockStart, i)
 				//reset
 				blockStart = -1
 				blockNow = BLOCK_UNDEFINED
@@ -170,7 +222,7 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 					return "", nil, errors.New("Run time error, blockStart")
 				}
 				//Fetch args
-				args = append(args, cmd[blockStart:i])
+				args = append(args, doneEscapeFunc(&cmd, blockStart, i))
 				//reset
 				blockStart = -1
 				blockNow = BLOCK_UNDEFINED
@@ -194,14 +246,15 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 				return "", nil, errors.New("Reach end but block undefined.")
 
 			}else if blockNow == BLOCK_ARG {
-				args = append(args, cmd[blockStart:])
+				args = append(args, doneEscapeFunc(&cmd, blockStart, length))
 
 			}else if blockNow == BLOCK_CMD {
-				path = cmd[blockStart:]
+				path = doneEscapeFunc(&cmd, blockStart, length)
 
 			}else {
 				return "", nil, errors.New("BLOCK_QUOTED end exception.")
 			}
+
 		}else {
 			//char
 			if blockNow == BLOCK_UNDEFINED {
