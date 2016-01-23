@@ -34,6 +34,10 @@ const (
 	DEFAULT_MAX = 1024 * 1024
 // 缓存对最多多久刷新到磁盘
 	DEFAULT_TTL = 3 * time.Second
+// File mode for log
+	DEFAULT_LOGFILE_MODE = 0660
+// Dir mode for log, Need exec to read
+	DEFAULT_LOGDIR_MODE = 0770
 // 写入channel信号
 	WRITE_SIGNAL = 1
 )
@@ -45,12 +49,12 @@ func NewFileLog(logpath string) (*FileLog, error) {
 		return nil, &os.PathError{"open", logpath, errors.New("File path empty.")}
 	}
 
-	err := os.MkdirAll(filepath.Dir(logpath), 0777)
+	err := os.MkdirAll(filepath.Dir(logpath), DEFAULT_LOGDIR_MODE)
 	if err != nil {
 		return nil, &os.PathError{"create dir", logpath, err}
 	}
 
-	file, err := os.OpenFile(logpath, os.O_CREATE | os.O_APPEND | os.O_RDWR | os.O_SYNC, 0660)
+	file, err := os.OpenFile(logpath, os.O_CREATE | os.O_APPEND | os.O_RDWR | os.O_SYNC, DEFAULT_LOGFILE_MODE)
 	if err != nil {
 		return nil, &os.PathError{"open", logpath, err}
 	}
@@ -68,7 +72,10 @@ func NewFileLog(logpath string) (*FileLog, error) {
 
 func GenerateFileLogPathName(path, service string) (string) {
 	date := time.Now()
-	return fmt.Sprintf("%s/%s.%v.log", path, service, date.Format("2006-01-02"))
+
+	fname := fmt.Sprintf("%s/%s.%v.log", path, service, date.Format("2006-01-02"))
+
+	return fname
 }
 
 func (f *FileLog) Write(b []byte) (n int, err error) {

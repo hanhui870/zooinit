@@ -16,12 +16,12 @@ func TestMuiltWriterLogger(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	cfgpath := filepath.Dir(dir) + "/config/config.ini"
+	cfgpath := filepath.Dir(dir) + "/config/config_for_test.ini"
 
 	ini := config.Ini(cfgpath)
 	logPath := ini.Section("production").Key("log.path").String()
 
-	f, err := os.OpenFile(GenerateFileLogPathName(logPath, "test/zoomuiltloger"), os.O_CREATE | os.O_APPEND | os.O_RDWR | os.O_SYNC, 0660)
+	f, err := NewFileLog(GenerateFileLogPathName(logPath, "test/zoomuiltloger"))
 	if err != nil {
 		t.Error(err)
 	}

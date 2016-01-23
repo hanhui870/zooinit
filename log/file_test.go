@@ -15,7 +15,7 @@ func TestFileLoggerNormal(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	cfgpath := filepath.Dir(dir) + "/config/config.ini"
+	cfgpath := filepath.Dir(dir) + "/config/config_for_test.ini"
 	t.Log("Working dir now:", dir, " Config path:", cfgpath)
 
 	ini := config.Ini(cfgpath)
@@ -30,7 +30,7 @@ func TestFileLoggerNormal(t *testing.T) {
 
 	log, err := NewFileLog(GenerateFileLogPathName(logPath, "test/zooinit"))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	//必须调用不然会丢失日志
