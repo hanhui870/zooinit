@@ -144,6 +144,7 @@ func BootstrapEtcd(env *envInfo) (error) {
 		env.logger.Println("Etcd member service ", discoveryClientUrl, " started,  waiting to be bootrapped.")
 	}
 
+	// If stoped, process's output can't trace no longer
 	time.Sleep(CLUSTER_BOOTSTRAP_TIMEOUT)
 	return nil
 }
