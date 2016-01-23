@@ -108,7 +108,7 @@ func BootstrapEtcd(env *envInfo) (error) {
 	env.logger.Println("Etcd Discovery PeerUrl:", discoveryPeerUrl)
 	env.logger.Println("Etcd Discovery ClientUrl:", discoveryClientUrl)
 
-	disExecCmd := env.cmd + " -name " + "etcd.bootstrap." +
+	disExecCmd := env.cmd + " -name " + "etcd.bootstrap." + env.localIP.String()
 	" -initial-advertise-peer-urls " + discoveryPeerUrl +
 	" -listen-peer-urls " + discoveryPeerUrl +
 	" -listen-client-urls http://127.0.0.1:2379," + discoveryClientUrl +

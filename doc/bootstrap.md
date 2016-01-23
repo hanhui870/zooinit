@@ -71,3 +71,6 @@ zooinit cluster -f config/config.ini clustername
 
     Q: 2016-01-21 12:13:52.381145 E | rafthttp: request sent was ignored (cluster ID mismatch: remote[e5fb7fff54887bea]=7e27652122e8b2ae, local=7021b573b4e69e)
     A: Need to service, localip want to be member of bootstrap cluster, initial discovery service need to be other ports.
+
+    Q: 2016-01-23 08:33:54.092667 E | etcdmain: member with duplicated name has registered with discovery service token(http://172.17.0.10:2377/v2/keys/boot/initial).
+    A: Check http://192.168.4.108:2379/v2/keys/_etcd/registry/fdsafdsafdsafdsa for duplicated node name.
