@@ -6,3 +6,4 @@
 *.pprof
 pkg
 bin
+main
