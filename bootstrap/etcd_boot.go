@@ -10,6 +10,7 @@ import (
 
 	"zooinit/utility"
 	"zooinit/cluster/etcd"
+	"zooinit/log"
 )
 
 const (
@@ -54,6 +55,10 @@ func BootstrapEtcd(env *envInfo) (error) {
 		}
 
 		cmd := exec.Command(path, args...)
+		loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
+		loggerIOAdapter.SetPrefix("Etcd internal server: ")
+		cmd.Stdout = loggerIOAdapter
+		cmd.Stderr = loggerIOAdapter
 		err = cmd.Start()
 
 
@@ -126,6 +131,10 @@ func BootstrapEtcd(env *envInfo) (error) {
 	}
 
 	cmd := exec.Command(path, args...)
+	loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
+	loggerIOAdapter.SetPrefix("Etcd discovery member: ")
+	cmd.Stdout = loggerIOAdapter
+	cmd.Stderr = loggerIOAdapter
 	err = cmd.Start()
 
 	if err != nil {
