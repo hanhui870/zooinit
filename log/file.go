@@ -241,7 +241,7 @@ func (f *FileLog) backgroundSaveWorker() (error) {
 
 		case writeSignal := <-timeChan:
 			if writeSignal == WRITE_SIGNAL {
-				fmt.Println("receive write signal:", writeSignal)
+				//fmt.Println("receive write signal:", writeSignal)
 				_, err := f.sync()
 				if err != nil {
 					panic(err)
