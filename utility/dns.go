@@ -4,6 +4,8 @@ import (
 	"github.com/juju/errors"
 	"math/rand"
 	"net"
+	"strconv"
+	"strings"
 )
 
 type SRVService struct {
@@ -12,10 +14,11 @@ type SRVService struct {
 }
 
 type SRVInfo struct {
-	cname string
-	ip    net.IP
-	port  uint16
+	ip   net.IP
+	port uint16
 }
+
+type SRVList []*SRVInfo
 
 // Fetch SRV dns records of A domain, use for discovery service
 // in _etcd._tcp.discovery.alishui.com
@@ -41,7 +44,7 @@ func NewSRVServiceOfDomainAndService(service, protocal, domain string) (*SRVServ
 
 // Build New SRVInfo info
 func NewSRVInfo(srv *net.SRV) (*SRVInfo, error) {
-	sin := &SRVInfo{cname: srv.Target, port: srv.Port}
+	sin := &SRVInfo{port: srv.Port}
 
 	if ip := net.ParseIP(srv.Target[:len(srv.Target)-1]); ip != nil {
 		sin.ip = ip
@@ -51,6 +54,19 @@ func NewSRVInfo(srv *net.SRV) (*SRVInfo, error) {
 			return nil, err
 		}
 		sin.ip = ip
+	}
+
+	return sin, nil
+}
+
+// Build New SRVInfo info
+func NewSRVInfoBuild(ip string, port uint16) (*SRVInfo, error) {
+	sin := &SRVInfo{port: port}
+
+	if ipo := net.ParseIP(ip); ipo != nil {
+		sin.ip = ipo
+	} else {
+		return nil, errors.New("IP parse for " + ip + " result nil.")
 	}
 
 	return sin, nil
@@ -90,9 +106,6 @@ func GetRandomIpV4(ips []net.IP) (net.IP, error) {
 	var ipdst []net.IP
 	for _, ip := range ips {
 		if ip4 := ip.To4(); ip4 != nil {
-			if ipdst == nil {
-				ipdst = make([]net.IP, 1, 5)
-			}
 			ipdst = append(ipdst, ip)
 		}
 	}
@@ -110,9 +123,6 @@ func GetRandomIpV6(ips []net.IP) (net.IP, error) {
 	for _, ip := range ips {
 		//ip.To16 no use. ip4==nil is IP6
 		if ip4 := ip.To4(); ip4 == nil {
-			if ipdst == nil {
-				ipdst = make([]net.IP, 1)
-			}
 			ipdst = append(ipdst, ip)
 		}
 	}
@@ -122,4 +132,19 @@ func GetRandomIpV6(ips []net.IP) (net.IP, error) {
 	}
 
 	return ipdst[rand.Intn(len(ipdst))], nil
+}
+
+// Format SRVList to ip1:port, ip2:port for cluster use
+func (s SRVList) Endpoints() string {
+	if s == nil {
+		return ""
+	}
+	var ends []string
+
+	for _, value := range s {
+		tmp := value.ip.String() + ":" + strconv.Itoa(int(value.port))
+		ends = append(ends, tmp)
+	}
+
+	return strings.Join(ends, ",")
 }

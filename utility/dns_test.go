@@ -96,6 +96,10 @@ func TestDNSQueryNormal(t *testing.T) {
 }
 
 func TestSRVService(t *testing.T) {
+	if testing.Short() {
+		t.Skip("TestSRVService skip for short.")
+	}
+
 	var arr = []int{2}
 	rt := rand.Intn(len(arr))
 	if arr[rt] != 2 {
@@ -114,7 +118,7 @@ func TestSRVService(t *testing.T) {
 		if err != nil {
 			t.Error("GetRandomService err:", err)
 		} else {
-			t.Log("Get Random one:", rs.cname, rs.ip, rs.port)
+			t.Log("Get Random one:", rs.ip, rs.port)
 		}
 	}
 
@@ -130,7 +134,27 @@ func TestSRVService(t *testing.T) {
 		if err != nil {
 			t.Error("GetRandomService err:", err)
 		} else {
-			t.Log("Get Random one:", rs.cname, rs.ip, rs.port)
+			t.Log("Get Random one:", rs.ip, rs.port)
 		}
 	}
+}
+
+func TestSRVInfoNormal(t *testing.T) {
+	sv1, err := NewSRVInfoBuild("192.168.4.220", 2379)
+	if err != nil {
+		t.Error("NewSRVInfoBuild err:", err)
+	}
+
+	sv2, err := NewSRVInfoBuild("192.168.4.221", 2379)
+	if err != nil {
+		t.Error("NewSRVInfoBuild err:", err)
+	}
+
+	svlist := &SRVList{sv1, sv2}
+	if svlist.Endpoints() != "192.168.4.220:2379,192.168.4.221:2379" {
+		t.Error("svlist.Endpoints() err:", svlist.Endpoints())
+	} else {
+		t.Log("svlist.Endpoints() result:", svlist.Endpoints())
+	}
+
 }
