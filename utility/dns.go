@@ -1,6 +1,10 @@
 package utility
 
-import "net"
+import (
+	"github.com/juju/errors"
+	"math/rand"
+	"net"
+)
 
 type SRVService struct {
 	// srv result
@@ -26,13 +30,30 @@ func NewSRVServiceOfDomain(domain string) (*SRVService, error) {
 
 //Fetch SRV dns records of A domain, use for discovery service
 // in discovery.alishui.com etcd tcp
-func NewSRVServiceOfDomainAndService(domain, service, protocal string) (*SRVService, error) {
+func NewSRVServiceOfDomainAndService(service, protocal, domain string) (*SRVService, error) {
 	_, srvs, err := net.LookupSRV(service, protocal, domain)
 	if err != nil {
 		return nil, err
 	}
 
 	return &SRVService{srvs}, nil
+}
+
+// Build New SRVInfo info
+func NewSRVInfo(srv *net.SRV) (*SRVInfo, error) {
+	sin := &SRVInfo{cname: srv.Target, port: srv.Port}
+
+	if ip := net.ParseIP(srv.Target[:len(srv.Target)-1]); ip != nil {
+		sin.ip = ip
+	} else if ips, err := net.LookupIP(srv.Target); err == nil {
+		ip, err := GetRandomIpV4(ips)
+		if err != nil {
+			return nil, err
+		}
+		sin.ip = ip
+	}
+
+	return sin, nil
 }
 
 // value.Weight , value.Priority Process
@@ -47,11 +68,58 @@ func NewSRVServiceOfDomainAndService(domain, service, protocal string) (*SRVServ
 //
 // Result of net.LookupSRV is sorted.
 func (s *SRVService) GetRankedRandomService() (*SRVInfo, error) {
+	if s == nil || s.srvs == nil {
+		return nil, errors.New("SRVService object nil.")
+	}
 
 	return nil, nil
 }
 
+// return a random one
 func (s *SRVService) GetRandomService() (*SRVInfo, error) {
+	if s == nil || s.srvs == nil {
+		return nil, errors.New("SRVService object nil.")
+	}
 
-	return nil, nil
+	return NewSRVInfo(s.srvs[rand.Intn(len(s.srvs))])
+}
+
+// Fetch IPv4 result of dns result
+// IPv4 default 16 length, with zero padding
+func GetRandomIpV4(ips []net.IP) (net.IP, error) {
+	var ipdst []net.IP
+	for _, ip := range ips {
+		if ip4 := ip.To4(); ip4 != nil {
+			if ipdst == nil {
+				ipdst = make([]net.IP, 1, 5)
+			}
+			ipdst = append(ipdst, ip)
+		}
+	}
+
+	if ipdst == nil {
+		return nil, errors.New("Not found")
+	}
+
+	return ipdst[rand.Intn(len(ipdst))], nil
+}
+
+// Fetch IPv6 result of dns result
+func GetRandomIpV6(ips []net.IP) (net.IP, error) {
+	var ipdst []net.IP
+	for _, ip := range ips {
+		//ip.To16 no use. ip4==nil is IP6
+		if ip4 := ip.To4(); ip4 == nil {
+			if ipdst == nil {
+				ipdst = make([]net.IP, 1)
+			}
+			ipdst = append(ipdst, ip)
+		}
+	}
+
+	if ipdst == nil {
+		return nil, errors.New("Not found")
+	}
+
+	return ipdst[rand.Intn(len(ipdst))], nil
 }
