@@ -143,7 +143,6 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 		strNew := (*str)[start:end]
 
 		if escapePos != -1 {
-			println(escapePos, length, start)
 			if escapePos > length || escapePos < start {
 				panic("Never can happen. escapePos > length || escapePos < start")
 
