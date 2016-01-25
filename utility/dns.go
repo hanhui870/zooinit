@@ -2,26 +2,37 @@ package utility
 
 import "net"
 
+type SRVService struct {
+	// srv result
+	srvs []*net.SRV
+}
+
+type SRVInfo struct {
+	cname string
+	ip    net.IP
+	port  uint16
+}
+
 // Fetch SRV dns records of A domain, use for discovery service
 // in _etcd._tcp.discovery.alishui.com
-func GetSrvRecordsOfDomain( domain string ) ([]*net.SRV, error){
-	_, srvs, err:=net.LookupSRV("", "", domain)
+func NewSRVServiceOfDomain(domain string) (*SRVService, error) {
+	_, srvs, err := net.LookupSRV("", "", domain)
 	if err != nil {
 		return nil, err
 	}
 
-	return srvs, nil
+	return &SRVService{srvs}, nil
 }
 
 //Fetch SRV dns records of A domain, use for discovery service
 // in discovery.alishui.com etcd tcp
-func GetSrvRecordsOfDomainAndService( domain, service, protocal string ) ([]*net.SRV, error){
-	_, srvs, err:=net.LookupSRV(service, protocal, domain)
+func NewSRVServiceOfDomainAndService(domain, service, protocal string) (*SRVService, error) {
+	_, srvs, err := net.LookupSRV(service, protocal, domain)
 	if err != nil {
 		return nil, err
 	}
 
-	return srvs, nil
+	return &SRVService{srvs}, nil
 }
 
 // value.Weight , value.Priority Process
@@ -35,7 +46,12 @@ func GetSrvRecordsOfDomainAndService( domain, service, protocal string ) ([]*net
 // 	records with weight 0 should have a very small chance of being selected.
 //
 // Result of net.LookupSRV is sorted.
-func GetRankedRandomDisoveryService([]*net.SRV)([]*net.SRV, error){
+func (s *SRVService) GetRankedRandomService() (*SRVInfo, error) {
+
+	return nil, nil
+}
+
+func (s *SRVService) GetRandomService() (*SRVInfo, error) {
 
 	return nil, nil
 }
