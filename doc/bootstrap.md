@@ -62,7 +62,7 @@ zooinit cluster -f config/config.ini clustername
         -listen-client-urls http://127.0.0.1:2379,http://192.168.4.202:2379 \
         -advertise-client-urls http://192.168.4.202:2379 \
         -discovery http://192.168.4.108:2379/v2/keys/_etcd/registry/fdsafdsafdsafdsa
-    4. Kill the initial one.
+    4. Improve: Will not kill the initial one. The zooinit process will daemon run as a watch dog.
 
 
 ## QA
