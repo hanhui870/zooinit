@@ -84,12 +84,17 @@ func NewSRVInfoBuild(ip string, port uint16) (*SRVInfo, error) {
 // 	records with weight 0 should have a very small chance of being selected.
 //
 // Result of net.LookupSRV is sorted.
-func (s *SRVService) GetRankedRandomService() (*SRVInfo, error) {
+func (s *SRVService) GetRankedService() (*SRVInfo, error) {
 	if s == nil || s.srvs == nil {
 		return nil, errors.New("SRVService object nil.")
 	}
 
-	return nil, nil
+	//Golang has already sorted priority and weight
+	if len(s.srvs) > 0 {
+		return NewSRVInfo(s.srvs[0])
+	} else {
+		return nil, nil
+	}
 }
 
 // return a random one

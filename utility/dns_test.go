@@ -128,9 +128,16 @@ func TestSRVService(t *testing.T) {
 	} else {
 		t.Logf("result discovery.alishui.com: %q", srv)
 
+		rs, err := srv.GetRankedService()
+		if err != nil {
+			t.Error("GetRankedRandomService err:", err)
+		} else {
+			t.Log("Get Ranked one:", rs.ip, rs.port)
+		}
+
 		//panic: runtime error: invalid memory address or nil pointer dereference [recovered] May not exist.
 		//t.Log("Get Random one:", srv.GetRankedRandomService().cname)
-		rs, err := srv.GetRandomService()
+		rs, err = srv.GetRandomService()
 		if err != nil {
 			t.Error("GetRandomService err:", err)
 		} else {
