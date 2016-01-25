@@ -18,6 +18,7 @@ type SRVInfo struct {
 	port uint16
 }
 
+// A SRVList to batch fetch ednpoints
 type SRVList []*SRVInfo
 
 // Fetch SRV dns records of A domain, use for discovery service
@@ -98,6 +99,23 @@ func (s *SRVService) GetRandomService() (*SRVInfo, error) {
 	}
 
 	return NewSRVInfo(s.srvs[rand.Intn(len(s.srvs))])
+}
+
+func (s *SRVService) GetAllSrvList() (SRVList, error) {
+	if s == nil || s.srvs == nil {
+		return nil, errors.New("SRVService object nil.")
+	}
+
+	var list SRVList
+	for _, value := range s.srvs {
+		srv, err := NewSRVInfo(value)
+		if err != nil {
+			continue
+		}
+		list = append(list, srv)
+	}
+
+	return list, nil
 }
 
 // Fetch IPv4 result of dns result

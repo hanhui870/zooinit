@@ -136,6 +136,13 @@ func TestSRVService(t *testing.T) {
 		} else {
 			t.Log("Get Random one:", rs.ip, rs.port)
 		}
+
+		relist, err := srv.GetAllSrvList()
+		if err != nil {
+			t.Error("GetAllSrvList err:", err)
+		} else {
+			t.Log("Get GetAllSrvList endpoints:", relist.Endpoints())
+		}
 	}
 }
 
