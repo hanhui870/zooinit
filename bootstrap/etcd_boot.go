@@ -150,6 +150,15 @@ func BootstrapEtcd(env *envInfo) error {
 		env.logger.Println("Etcd member service ", discoveryClientUrl, " started,  waiting to be bootrapped.")
 	}
 
+	// Important!!! check upstarted
+	env.logger.Println("Etcd LoopTimeoutRequest for check discovery cluster's startup...")
+	isHealth := LoopTimeoutRequest(env.timeout, env, func() bool {
+		return etcd.CheckHealth(discoveryClientUrl)
+	})
+	if isHealth != true {
+		env.logger.Fatal("Error check internal server health:", isHealth)
+	}
+
 	// check cluster bootstraped and register memberself
 	// If stoped, process's output can't trace no longer
 	clusterCmd.Wait()
@@ -161,14 +170,19 @@ func BootstrapEtcd(env *envInfo) error {
 func LoopTimeoutRequest(timeout time.Duration, env *envInfo, routine func() (result bool)) (result bool) {
 	var charlist []byte
 
-	timer := time.NewTimer(timeout)
+	result = false
+	start := time.Now()
 	for {
 		result = routine()
 		if !result {
 			charlist = append(charlist, byte('.'))
-			//sleep 100ms
-			if !timer.Stop() {
+			// sleep 100ms
+			end := time.Now()
+			// not time outed
+			if end.Sub(start) < timeout {
 				time.Sleep(100 * time.Millisecond)
+			} else {
+				break
 			}
 		} else {
 			break

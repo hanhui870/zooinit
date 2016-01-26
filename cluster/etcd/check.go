@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type health struct {
@@ -11,13 +12,15 @@ type health struct {
 	Health string `json:"health"`
 }
 
-//check cluster is cluster
+// check cluster is cluster
 func (h *health) IsHealth() bool {
 	return &h != nil && h.Health == "true"
 }
 
+// check health need a max timeout 1s for quick fail
 func CheckHealth(client string) bool {
-	resp, err := http.Get(client + "/health")
+	cli := &http.Client{Timeout: time.Second}
+	resp, err := cli.Get(client + "/health")
 	if err != nil {
 		return false
 	}
