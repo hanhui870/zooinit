@@ -160,6 +160,10 @@ func BootstrapEtcd(env *envInfo) error {
 		env.logger.Fatal("Cluster bootstrap faild: failed to bootstrap in ", env.timeout.String())
 	}
 
+	//watch dog run
+	w := NewWatchDog(env, internalClientUrl, discoveryClientUrl)
+	go w.Run()
+
 	// check cluster bootstraped and register memberself
 	// If stoped, process's output can't trace no longer
 	clusterCmd.Wait()

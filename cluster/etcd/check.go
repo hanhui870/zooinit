@@ -7,9 +7,29 @@ import (
 	"time"
 )
 
+// An cluster server health check
+type ServerCheck struct {
+	Client string
+	Peer   string
+}
+
 type health struct {
 	//json need first char upcase
 	Health string `json:"health"`
+}
+
+// Allow peer empty
+func NewServerCheck(client, peer string) *ServerCheck {
+	return &ServerCheck{Client: client, Peer: peer}
+}
+
+// check cluster is cluster
+func (s *ServerCheck) IsHealth() bool {
+	if s == nil {
+		return false
+	}
+
+	return CheckHealth(s.Client)
 }
 
 // check cluster is cluster
