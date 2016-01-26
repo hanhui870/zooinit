@@ -1,25 +1,25 @@
 package bootstrap
 
 import (
-	"os/exec"
-	"time"
-	"strconv"
 	"net/http"
+	"os/exec"
+	"strconv"
+	"time"
 
 	"github.com/coreos/etcd/client"
 
-	"zooinit/utility"
 	"zooinit/cluster/etcd"
 	"zooinit/log"
+	"zooinit/utility"
 )
 
 const (
-// INTERNAL discovery findpath
-	INTERNAL_FINDPATH = "/boot/initial"
+	// INTERNAL discovery findpath
+	INTERNAL_FINDPATH         = "/zooinit/boot"
 	CLUSTER_BOOTSTRAP_TIMEOUT = 5 * time.Minute
 )
 
-func BootstrapEtcd(env *envInfo) (error) {
+func BootstrapEtcd(env *envInfo) error {
 	env.logger.Println("Starting to boot Etcd...")
 
 	// Internal discovery service
@@ -39,12 +39,12 @@ func BootstrapEtcd(env *envInfo) (error) {
 		// Add & can't fast wait
 		// data-dir can't be same with discovery service.
 		intName := "etcd.initial"
-		intExecCmd := "etcd --data-dir /tmp/internal/etcd/data -wal-dir /tmp/internal/etcd/wal -name " + intName +
-		" -initial-advertise-peer-urls " + internalPeerUrl +
-		" -listen-peer-urls " + internalPeerUrl +
-		" -listen-client-urls " + internalClientUrl +
-		" -advertise-client-urls " + internalClientUrl +
-		" -initial-cluster " + intName + "=" + internalPeerUrl
+		intExecCmd := "etcd --data-dir " + env.internalDataDir + " -wal-dir " + env.internalWalDir + " -name " + intName +
+			" -initial-advertise-peer-urls " + internalPeerUrl +
+			" -listen-peer-urls " + internalPeerUrl +
+			" -listen-client-urls " + internalClientUrl +
+			" -advertise-client-urls " + internalClientUrl +
+			" -initial-cluster " + intName + "=" + internalPeerUrl
 
 		env.logger.Println("Etcd Internal ExecCmd:", intExecCmd)
 
@@ -54,24 +54,23 @@ func BootstrapEtcd(env *envInfo) (error) {
 			env.logger.Fatalln("Error ParseCmdStringWithParams internal service:", err)
 		}
 
-		cmd := exec.Command(path, args...)
+		internalCmd := exec.Command(path, args...)
 		loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
 		loggerIOAdapter.SetPrefix("Etcd internal server: ")
-		cmd.Stdout = loggerIOAdapter
-		cmd.Stderr = loggerIOAdapter
-		err = cmd.Start()
-
+		internalCmd.Stdout = loggerIOAdapter
+		internalCmd.Stderr = loggerIOAdapter
+		err = internalCmd.Start()
 
 		if err != nil {
 			env.logger.Fatalln("Exec Internal ExecCmd Error:", err)
-		}else {
-			env.logger.Println("Exec Internal OK, PID:", cmd.Process.Pid)
+		} else {
+			env.logger.Println("Exec Internal OK, PID:", internalCmd.Process.Pid)
 
 			// Release process after cluster up.
-			defer cmd.Process.Kill()
+			defer internalCmd.Process.Kill()
 
 			// Set PID
-			env.internalCmdInstance = cmd
+			env.internalCmdInstance = internalCmd
 			env.logger.Println("Internal service started.")
 
 			// Important!!!
@@ -85,7 +84,7 @@ func BootstrapEtcd(env *envInfo) (error) {
 			}
 			env.logger.Println("Etcd internal Stat self:", resp)
 
-			_, err = api.Conn().Delete(etcd.Context(), INTERNAL_FINDPATH, &client.DeleteOptions{Dir:true, Recursive:true})
+			_, err = api.Conn().Delete(etcd.Context(), INTERNAL_FINDPATH, &client.DeleteOptions{Dir: true, Recursive: true})
 			if err != nil {
 				//type safe cast
 				err, ok := err.(client.Error)
@@ -94,15 +93,16 @@ func BootstrapEtcd(env *envInfo) (error) {
 				}
 			}
 
-			_, err = api.Conn().Set(etcd.Context(), INTERNAL_FINDPATH, "", &client.SetOptions{TTL:CLUSTER_BOOTSTRAP_TIMEOUT, Dir:true})
+			env.logger.Println("Set Cluster bootstrap timeout:", env.timeout.String())
+			_, err = api.Conn().Set(etcd.Context(), INTERNAL_FINDPATH, "", &client.SetOptions{TTL: env.timeout, Dir: true})
 			if err != nil {
 				env.logger.Fatal("Set TTL for ", INTERNAL_FINDPATH, " error:", err)
 			}
 
-			env.logger.Println("Set Qurorum ", INTERNAL_FINDPATH + "/_config/size to", env.qurorum)
-			_, err = api.Conn().Set(etcd.Context(), INTERNAL_FINDPATH + "/_config/size", strconv.Itoa(env.qurorum), nil)
+			env.logger.Println("Set Qurorum ", INTERNAL_FINDPATH+"/_config/size to", env.qurorum)
+			_, err = api.Conn().Set(etcd.Context(), INTERNAL_FINDPATH+"/_config/size", strconv.Itoa(env.qurorum), nil)
 			if err != nil {
-				env.logger.Fatal("Set Qurorum ", INTERNAL_FINDPATH + "/_config/size error:", err)
+				env.logger.Fatal("Set Qurorum ", INTERNAL_FINDPATH+"/_config/size error:", err)
 			}
 		}
 	}
@@ -113,15 +113,15 @@ func BootstrapEtcd(env *envInfo) (error) {
 	env.logger.Println("Etcd Discovery PeerUrl:", discoveryPeerUrl)
 	env.logger.Println("Etcd Discovery ClientUrl:", discoveryClientUrl)
 
-	disExecCmd := env.cmd + " -name " + "etcd.bootstrap." + env.localIP.String() +
-	" -initial-advertise-peer-urls " + discoveryPeerUrl +
-	" -listen-peer-urls " + discoveryPeerUrl +
-	" -listen-client-urls http://127.0.0.1:2379," + discoveryClientUrl +
-	" -advertise-client-urls " + discoveryClientUrl +
-	" -discovery " + internalClientUrl + "/v2/keys" + INTERNAL_FINDPATH
+	disExecCmd := env.cmd + " --data-dir " + env.cmdDataDir + " -wal-dir " + env.cmdWalDir +
+		" -name " + "etcd.bootstrap." + env.localIP.String() +
+		" -initial-advertise-peer-urls " + discoveryPeerUrl +
+		" -listen-peer-urls " + discoveryPeerUrl +
+		" -listen-client-urls http://127.0.0.1:2379," + discoveryClientUrl +
+		" -advertise-client-urls " + discoveryClientUrl +
+		" -discovery " + internalClientUrl + "/v2/keys" + INTERNAL_FINDPATH
 
 	env.logger.Println("Etcd Discovery ExecCmd:", disExecCmd)
-
 
 	// Boot internal discovery service
 	// Need to rm -rf /tmp/etcd/ because dir may be used before
@@ -130,22 +130,24 @@ func BootstrapEtcd(env *envInfo) (error) {
 		env.logger.Fatalln("Error ParseCmdStringWithParams cluster bootstrap:", err)
 	}
 
-	cmd := exec.Command(path, args...)
+	clusterCmd := exec.Command(path, args...)
 	loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
 	loggerIOAdapter.SetPrefix("Etcd discovery member: ")
-	cmd.Stdout = loggerIOAdapter
-	cmd.Stderr = loggerIOAdapter
-	err = cmd.Start()
+	clusterCmd.Stdout = loggerIOAdapter
+	clusterCmd.Stderr = loggerIOAdapter
+	err = clusterCmd.Start()
+	defer clusterCmd.Process.Kill()
 
 	if err != nil {
 		env.logger.Fatalln("Exec Discovery ExecCmd Error:", err)
-	}else {
-		env.logger.Println("Exec Discovery Etcd member OK, PID:", cmd.Process.Pid)
+	} else {
+		env.logger.Println("Exec Discovery Etcd member OK, PID:", clusterCmd.Process.Pid)
 		env.logger.Println("Etcd member service ", discoveryClientUrl, " started,  waiting to be bootrapped.")
 	}
 
+	// check cluster bootstraped and register memberself
 	// If stoped, process's output can't trace no longer
-	time.Sleep(CLUSTER_BOOTSTRAP_TIMEOUT)
+	clusterCmd.Wait()
+
 	return nil
 }
-

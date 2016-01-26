@@ -1,10 +1,10 @@
 package bootstrap
 
 import (
-	"time"
 	"log"
 	"net"
 	"os/exec"
+	"time"
 
 	"github.com/go-ini/ini"
 	"strings"
@@ -16,7 +16,7 @@ import (
 // This basic discovery service bootstrap env info
 type envInfo struct {
 	//service name, also use for log
-	service       string
+	service string
 
 	// Bootstrap etcd cluster service for boot other cluster service.
 	discoveryHost string
@@ -24,42 +24,46 @@ type envInfo struct {
 	discoveryPeer string
 
 	// Used for internal bootstrap for system, Only one member.
-	internalHost  string
-	internalPort  string
-	internalPeer  string
+	internalHost    string
+	internalPort    string
+	internalPeer    string
+	internalDataDir string
+	internalWalDir  string
 
 	// internal Boot PID
 	// defalut 0
-	internalCmdInstance   *exec.Cmd
+	internalCmdInstance *exec.Cmd
 
 	// whether internalHost is the machine running program owns
-	isSelfIp      bool
+	isSelfIp bool
 
 	//localIP for boot
-	localIP       net.IP
+	localIP net.IP
 
 	// cluster totol qurorum
-	qurorum       int
+	qurorum int
 	// sec unit
-	timeout       time.Duration
+	timeout time.Duration
 
-	logPath       string
+	logPath string
 
 	// Logger instance for service
-	logger        *log.Logger
+	logger *log.Logger
 
 	// boot command
-	cmd           string
+	cmd        string
+	cmdDataDir string
+	cmdWalDir  string
 }
 
 // New env from file
-func NewEnvInfoFile (fname string) (*envInfo) {
+func NewEnvInfoFile(fname string) *envInfo {
 	iniobj := GetConfigInstance(fname)
 
 	return NewEnvInfo(iniobj)
 }
 
-func NewEnvInfo(iniobj *ini.File) (*envInfo) {
+func NewEnvInfo(iniobj *ini.File) *envInfo {
 	obj := new(envInfo)
 
 	sec := iniobj.Section(CONFIG_SECTION)
@@ -76,8 +80,8 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 		log.Fatalln("Config of discovery need ip:port:peer format.")
 	}
 	obj.discoveryHost = discovery[0:strings.Index(discovery, ":")]
-	obj.discoveryPort = discovery[strings.Index(discovery, ":") + 1:strings.LastIndex(discovery, ":")]
-	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":") + 1:]
+	obj.discoveryPort = discovery[strings.Index(discovery, ":")+1 : strings.LastIndex(discovery, ":")]
+	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":")+1:]
 
 	internal := sec.Key("internal").String()
 	if internal == "" {
@@ -89,7 +93,19 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	// Must be identical with discoveryHost
 	obj.internalHost = obj.discoveryHost
 	obj.internalPort = internal[0:strings.Index(internal, ":")]
-	obj.internalPeer = internal[strings.LastIndex(internal, ":") + 1:]
+	obj.internalPeer = internal[strings.LastIndex(internal, ":")+1:]
+
+	path := sec.Key("internal.data.dir").String()
+	if path == "" {
+		log.Fatalln("Config of internal.data.dir is empty.")
+	}
+	obj.internalDataDir = path
+
+	path = sec.Key("internal.wal.dir").String()
+	if path == "" {
+		log.Fatalln("Config of internal.wal.dir is empty.")
+	}
+	obj.internalWalDir = path
 
 	qurorum, err := sec.Key("qurorum").Int()
 	if err != nil {
@@ -104,7 +120,11 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 	if err != nil {
 		log.Fatalln("Config of timeout is error:", err)
 	}
-	obj.timeout = time.Duration(int(timeout * 1000000000))
+	if timeout == 0 {
+		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
+	} else {
+		obj.timeout = time.Duration(int(timeout * 1000000000))
+	}
 
 	obj.logPath = sec.Key("log.path").String()
 	if obj.logPath == "" {
@@ -119,11 +139,23 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 		log.Fatalln("Config of boot.cmd is empty.")
 	}
 
+	path = sec.Key("boot.data.dir").String()
+	if path == "" {
+		log.Fatalln("Config of boot.data.dir is empty.")
+	}
+	obj.cmdDataDir = path
+
+	path = sec.Key("boot.wal.dir").String()
+	if path == "" {
+		log.Fatalln("Config of boot.wal.dir is empty.")
+	}
+	obj.cmdWalDir = path
+
 	// Init Extra runtime info
 	if utility.HasIpAddress(obj.internalHost) {
 		obj.isSelfIp = true
 		obj.localIP = net.ParseIP(obj.internalHost)
-	}else {
+	} else {
 		obj.isSelfIp = false
 
 		localip, err := utility.GetLocalIPWithIntranet(obj.internalHost)
@@ -133,13 +165,11 @@ func NewEnvInfo(iniobj *ini.File) (*envInfo) {
 		obj.localIP = localip
 	}
 
-
-
 	return obj
 }
 
 // Fetch bootstrap command
-func (e *envInfo) GetCmd() (string) {
+func (e *envInfo) GetCmd() string {
 	if e == nil {
 		return ""
 	}
@@ -147,7 +177,7 @@ func (e *envInfo) GetCmd() (string) {
 	return e.cmd
 }
 
-func (e *envInfo) GetQurorum() (int) {
+func (e *envInfo) GetQurorum() int {
 	if e == nil {
 		return 0
 	}
@@ -155,7 +185,7 @@ func (e *envInfo) GetQurorum() (int) {
 	return e.qurorum
 }
 
-func (e *envInfo) GetTimeout() (time.Duration) {
+func (e *envInfo) GetTimeout() time.Duration {
 	if e == nil {
 		return 0
 	}
@@ -163,7 +193,7 @@ func (e *envInfo) GetTimeout() (time.Duration) {
 	return e.timeout
 }
 
-func (e *envInfo) Service() (string) {
+func (e *envInfo) Service() string {
 	if e == nil {
 		return ""
 	}
@@ -171,7 +201,7 @@ func (e *envInfo) Service() (string) {
 	return e.service
 }
 
-func (e *envInfo) Logger() (*log.Logger) {
+func (e *envInfo) Logger() *log.Logger {
 	if e == nil {
 		return nil
 	}
@@ -179,7 +209,7 @@ func (e *envInfo) Logger() (*log.Logger) {
 	return e.logger
 }
 
-func (e *envInfo) LocalIP() (net.IP) {
+func (e *envInfo) LocalIP() net.IP {
 	if e == nil {
 		return nil
 	}
@@ -187,7 +217,7 @@ func (e *envInfo) LocalIP() (net.IP) {
 	return e.localIP
 }
 
-func (e *envInfo) GetDiscoveryHost() (string) {
+func (e *envInfo) GetDiscoveryHost() string {
 	if e == nil {
 		return ""
 	}
@@ -195,11 +225,10 @@ func (e *envInfo) GetDiscoveryHost() (string) {
 	return e.discoveryHost
 }
 
-func (e *envInfo) GetDiscoveryPort() (string) {
+func (e *envInfo) GetDiscoveryPort() string {
 	if e == nil {
 		return ""
 	}
 
 	return e.discoveryPort
 }
-
