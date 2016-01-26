@@ -79,14 +79,14 @@ func BootstrapEtcd(env *envInfo) error {
 				return etcd.CheckHealth(internalClientUrl)
 			})
 			if isHealth != true {
-				env.logger.Fatal("Error check internal server health:", isHealth)
+				env.logger.Fatal("Error check internal server health: ", isHealth)
 			}
 
 			resp, err := http.Get(internalClientUrl + "/v2/stats/self")
 			if err != nil {
-				env.logger.Fatal("Error fetch stats self:", err)
+				env.logger.Fatal("Error fetch stats self: ", err)
 			}
-			env.logger.Println("Etcd internal Stat self:", resp)
+			env.logger.Println("Etcd internal Stat self: ", resp)
 
 			_, err = api.Conn().Delete(etcd.Context(), INTERNAL_FINDPATH, &client.DeleteOptions{Dir: true, Recursive: true})
 			if err != nil {
@@ -103,10 +103,10 @@ func BootstrapEtcd(env *envInfo) error {
 				env.logger.Fatal("Set TTL for ", INTERNAL_FINDPATH, " error:", err)
 			}
 
-			env.logger.Println("Set Qurorum ", INTERNAL_FINDPATH+"/_config/size to", env.qurorum)
+			env.logger.Println("Set Qurorum ", INTERNAL_FINDPATH+"/_config/size to ", env.qurorum)
 			_, err = api.Conn().Set(etcd.Context(), INTERNAL_FINDPATH+"/_config/size", strconv.Itoa(env.qurorum), nil)
 			if err != nil {
-				env.logger.Fatal("Set Qurorum ", INTERNAL_FINDPATH+"/_config/size error:", err)
+				env.logger.Fatal("Set Qurorum ", INTERNAL_FINDPATH+"/_config/size error: ", err)
 			}
 		}
 	}
@@ -125,13 +125,13 @@ func BootstrapEtcd(env *envInfo) error {
 		" -advertise-client-urls " + discoveryClientUrl +
 		" -discovery " + internalClientUrl + "/v2/keys" + INTERNAL_FINDPATH
 
-	env.logger.Println("Etcd Discovery ExecCmd:", disExecCmd)
+	env.logger.Println("Etcd Discovery ExecCmd: ", disExecCmd)
 
 	// Boot internal discovery service
 	// Need to rm -rf /tmp/etcd/ because dir may be used before
 	path, args, err := utility.ParseCmdStringWithParams(disExecCmd)
 	if err != nil {
-		env.logger.Fatalln("Error ParseCmdStringWithParams cluster bootstrap:", err)
+		env.logger.Fatalln("Error ParseCmdStringWithParams cluster bootstrap: ", err)
 	}
 
 	clusterCmd := exec.Command(path, args...)
@@ -144,9 +144,9 @@ func BootstrapEtcd(env *envInfo) error {
 	defer clusterCmd.Process.Kill()
 
 	if err != nil {
-		env.logger.Fatalln("Exec Discovery ExecCmd Error:", err)
+		env.logger.Fatalln("Exec Discovery ExecCmd Error: ", err)
 	} else {
-		env.logger.Println("Exec Discovery Etcd member OK, PID:", clusterCmd.Process.Pid)
+		env.logger.Println("Exec Discovery Etcd member OK, PID: ", clusterCmd.Process.Pid)
 		env.logger.Println("Etcd member service ", discoveryClientUrl, " started,  waiting to be bootrapped.")
 	}
 
@@ -156,7 +156,8 @@ func BootstrapEtcd(env *envInfo) error {
 		return etcd.CheckHealth(discoveryClientUrl)
 	})
 	if isHealth != true {
-		env.logger.Fatal("Error check internal server health:", isHealth)
+		env.logger.Fatal("Error check internal server health: ", isHealth)
+		env.logger.Fatal("Cluster bootstrap faild: failed to bootstrap in ", env.timeout.String())
 	}
 
 	// check cluster bootstraped and register memberself
