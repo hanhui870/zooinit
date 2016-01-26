@@ -73,10 +73,14 @@ func BootstrapEtcd(env *envInfo) error {
 			env.internalCmdInstance = internalCmd
 			env.logger.Println("Internal service started.")
 
-			// Important!!!
-			tts := 3 * time.Second
-			env.logger.Println("Etcd internal Sleep ", tts.String(), " for startup...")
-			time.Sleep(tts)
+			// Important!!! check upstarted
+			env.logger.Println("Etcd LoopTimeoutRequest for check internal's startup...")
+			isHealth := LoopTimeoutRequest(3*time.Second, env, func() bool {
+				return etcd.CheckHealth(internalClientUrl)
+			})
+			if isHealth != true {
+				env.logger.Fatal("Error check internal server health:", isHealth)
+			}
 
 			resp, err := http.Get(internalClientUrl + "/v2/stats/self")
 			if err != nil {
@@ -135,6 +139,7 @@ func BootstrapEtcd(env *envInfo) error {
 	loggerIOAdapter.SetPrefix("Etcd discovery member: ")
 	clusterCmd.Stdout = loggerIOAdapter
 	clusterCmd.Stderr = loggerIOAdapter
+
 	err = clusterCmd.Start()
 	defer clusterCmd.Process.Kill()
 
@@ -150,4 +155,27 @@ func BootstrapEtcd(env *envInfo) error {
 	clusterCmd.Wait()
 
 	return nil
+}
+
+//request until sucess
+func LoopTimeoutRequest(timeout time.Duration, env *envInfo, routine func() (result bool)) (result bool) {
+	var charlist []byte
+
+	timer := time.NewTimer(timeout)
+	for {
+		result = routine()
+		if !result {
+			charlist = append(charlist, byte('.'))
+			//sleep 100ms
+			if !timer.Stop() {
+				time.Sleep(100 * time.Millisecond)
+			}
+		} else {
+			break
+		}
+	}
+
+	env.logger.Println("Fetched data LoopTimeoutRequest for loop:", string(charlist))
+
+	return result
 }
