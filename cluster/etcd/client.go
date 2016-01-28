@@ -27,7 +27,10 @@ type ApiMembers struct {
 	client client.Client
 }
 
-// Cluster no points need
+type ApiStats struct {
+	client client.Client
+}
+
 // Stat can't use this method, Struct mismatch
 func NewClient(endpoints []string) (client.Client, error) {
 	var transport client.CancelableTransport = &http.Transport{
@@ -49,7 +52,6 @@ func NewClient(endpoints []string) (client.Client, error) {
 	return client.New(cfg)
 }
 
-// Cluster no points need
 // Stat can't use this method, Struct mismatch
 func NewApiKeys(endpoints []string) (*ApiKeys, error) {
 	c, err := NewClient(endpoints)
@@ -60,7 +62,16 @@ func NewApiKeys(endpoints []string) (*ApiKeys, error) {
 	return &ApiKeys{conn:client.NewKeysAPI(c), client:c}, nil
 }
 
-// Cluster no points need
+
+func (a *ApiKeys) Conn() (client.KeysAPI) {
+	if a == nil {
+		return nil
+	}
+
+	return a.conn
+}
+
+
 // Member use this method
 func NewApiMember(endpoints []string) (*ApiMembers, error) {
 	c, err := NewClient(endpoints)
@@ -71,7 +82,7 @@ func NewApiMember(endpoints []string) (*ApiMembers, error) {
 	return &ApiMembers{conn:client.NewMembersAPI(c), client:c}, nil
 }
 
-func (a *ApiKeys) Conn() (client.KeysAPI) {
+func (a *ApiMembers) Conn() (client.MembersAPI) {
 	if a == nil {
 		return nil
 	}
@@ -79,12 +90,14 @@ func (a *ApiKeys) Conn() (client.KeysAPI) {
 	return a.conn
 }
 
-func (a *ApiMembers) Conn() (client.MembersAPI) {
-	if a == nil {
-		return nil
+// Stat use this method
+func NewApiStats(endpoints []string) (*ApiStats, error) {
+	c, err := NewClient(endpoints)
+	if err != nil {
+		return nil, err
 	}
 
-	return a.conn
+	return &ApiStats{client:c}, nil
 }
 
 
