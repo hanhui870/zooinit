@@ -18,10 +18,10 @@ func TestCheckServiceClient(t *testing.T) {
 		t.Log("heal.IsHealth()=", heal.IsHealth())
 	}
 
-	isHealthy, err:=CheckHealth("http://localhost:2379")
+	isHealthy, err:=CheckHealth("http://registry.alishui.com:2379")
 	if  isHealthy!= true {
-		t.Log("CheckHealth of http://localhost:2379/ fasle, please check server is up.", err)
+		t.Log("CheckHealth of http://registry.alishui.com:2379/ fasle, please check server is up.", err)
 	} else {
-		t.Log("CheckHealth of http://localhost:2379/:", true)
+		t.Log("CheckHealth of http://registry.alishui.com:2379/:", true)
 	}
 }

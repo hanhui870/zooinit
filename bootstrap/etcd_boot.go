@@ -186,11 +186,7 @@ func LoopTimeoutRequest(timeout time.Duration, env *envInfo, routine func() (res
 	start := time.Now()
 	for {
 		result, err = routine()
-		if err != nil {
-			env.logger.Println("Found error, give up:", err)
-			break
-
-		}else if !result {
+		if !result || err!=nil {
 			charlist = append(charlist, byte('.'))
 			// sleep 100ms
 			end := time.Now()

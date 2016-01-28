@@ -11,7 +11,7 @@ import (
 
 func TestOriginalEtcdClient(t *testing.T) {
 	cfg := client.Config{
-		Endpoints:               []string{"http://127.0.0.1:2379"},
+		Endpoints:               []string{"http://registry.alishui.com:2379"},
 		Transport:               client.DefaultTransport,
 		// set timeout per request to fail fast when the target endpoint is unavailable
 		HeaderTimeoutPerRequest: time.Second,
@@ -46,7 +46,7 @@ func TestOriginalEtcdClient(t *testing.T) {
 }
 
 func TestClusterApi(t *testing.T) {
-	api, err := NewApi([]string{"http://127.0.0.1:2379"})
+	api, err := NewApi([]string{"http://registry.alishui.com:2379"})
 	if err != nil {
 		t.Error("NewApi error:", err)
 	}
