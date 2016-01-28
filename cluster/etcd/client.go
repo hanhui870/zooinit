@@ -46,7 +46,7 @@ func NewClient(endpoints []string) (client.Client, error) {
 
 // Cluster no points need
 // Stat can't use this method, Struct mismatch
-func NewApi(endpoints []string) (*Api, error) {
+func NewApiKeys(endpoints []string) (*Api, error) {
 	c, err := NewClient(endpoints)
 	if err != nil {
 		return nil, err
@@ -61,22 +61,6 @@ func (a *Api) Conn() (client.KeysAPI) {
 	}
 
 	return a.keyConn
-}
-
-func (a *Api) Members() (list *MemberList, err error) {
-	if a == nil {
-		return nil, nil
-	}
-
-	act:=NewMemberAction()
-
-	resp, body, err := a.client.Do(Context(), act)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return unmarshalMembersResponse(resp.StatusCode, resp.Header, body)
 }
 
 func Context() (context.Context) {

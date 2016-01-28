@@ -25,7 +25,7 @@ func BootstrapEtcd(env *envInfo) error {
 	// Internal discovery service
 	internalClientUrl := "http://" + env.internalHost + ":" + env.internalPort
 	// Api to internal service
-	api, err := etcd.NewApi([]string{internalClientUrl})
+	api, err := etcd.NewApiKeys([]string{internalClientUrl})
 	if err != nil {
 		env.logger.Fatal("Etcd NewApi error:", err)
 	}

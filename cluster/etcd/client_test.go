@@ -46,7 +46,7 @@ func TestOriginalEtcdClient(t *testing.T) {
 }
 
 func TestClusterApi(t *testing.T) {
-	api, err := NewApi([]string{"http://registry.alishui.com:2379"})
+	api, err := NewApiKeys([]string{"http://registry.alishui.com:2379"})
 	if err != nil {
 		t.Error("NewApi error:", err)
 	}
