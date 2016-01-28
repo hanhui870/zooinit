@@ -83,13 +83,4 @@ func TestClusterApi(t *testing.T) {
 		t.Logf("CreateInOrder /haimi/service/order: %q", resp)
 	}
 
-	list, err:=api.Members()
-	if err!=nil {
-		t.Error("Fetch members error:", err)
-	}else{
-		for _, value := range list.Members {
-			t.Logf("Found Member:", value.Name, value.ClientURLs, value.PeerURLs, value.Id)
-		}
-	}
-
 }
