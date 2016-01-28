@@ -2,6 +2,8 @@
 
 Bootstrop the basic etcd based high available discovery service for low level use.
 
+
+
 ## Description
 
 1. 顶层服务基于etcd的服务发现协议.等待数量到达预订大小后,执行bootstrap.
@@ -11,9 +13,11 @@ Bootstrop the basic etcd based high available discovery service for low level us
 5. The discovery configuration can use domainname SRV tech to discovery available host.
 
 
+
 ## Usage
 
 zooinit bootstrap -f config/config.ini
+
 
 
 ## Synopsis
@@ -22,14 +26,19 @@ zooinit bootstrap -f config/config.ini
     2. Second boot other etcd servers in the intranet.
     3. Finally the bootstrap service is up when qurorum reach qurorum size configured in the file.
 
+
+
 ## Bootstrap
 
 zooinit boot|bootstrap -f config/config.ini
 
 
+
 ## Bootstrap Cluster
 
 zooinit cluster -f config/config.ini clustername
+
+
 
 ## Sample
 
@@ -64,6 +73,8 @@ zooinit cluster -f config/config.ini clustername
         -advertise-client-urls http://192.168.4.202:2379 \
         -discovery http://192.168.4.108:2379/v2/keys/_etcd/registry/fdsafdsafdsafdsa
     4. Improve: Will not kill the initial one. The zooinit process will daemon run as a watch dog.
+
+
 
 # Etcd qurorum Add
 
