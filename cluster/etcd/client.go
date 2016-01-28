@@ -11,14 +11,19 @@ import (
 )
 
 const (
-	DEFALUT_CLIENT_TIMEOUT = 1 * time.Second
+	// 1s is too short
+	DEFALUT_CLIENT_TIMEOUT = 5 * time.Second
 	DEFAULT_CLIENT_KEEPALIVE = 30 * time.Second
 	DEFALUT_CLIENT_TLS_SHAKE_TIMEOUT = 5 * time.Second
 )
 
+type ApiKeys struct {
+	conn client.KeysAPI
+	client client.Client
+}
 
-type Api struct {
-	keyConn client.KeysAPI
+type ApiMembers struct {
+	conn client.MembersAPI
 	client client.Client
 }
 
@@ -46,22 +51,42 @@ func NewClient(endpoints []string) (client.Client, error) {
 
 // Cluster no points need
 // Stat can't use this method, Struct mismatch
-func NewApiKeys(endpoints []string) (*Api, error) {
+func NewApiKeys(endpoints []string) (*ApiKeys, error) {
 	c, err := NewClient(endpoints)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Api{keyConn:client.NewKeysAPI(c), client:c}, nil
+	return &ApiKeys{conn:client.NewKeysAPI(c), client:c}, nil
 }
 
-func (a *Api) Conn() (client.KeysAPI) {
+// Cluster no points need
+// Member use this method
+func NewApiMember(endpoints []string) (*ApiMembers, error) {
+	c, err := NewClient(endpoints)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ApiMembers{conn:client.NewMembersAPI(c), client:c}, nil
+}
+
+func (a *ApiKeys) Conn() (client.KeysAPI) {
 	if a == nil {
 		return nil
 	}
 
-	return a.keyConn
+	return a.conn
 }
+
+func (a *ApiMembers) Conn() (client.MembersAPI) {
+	if a == nil {
+		return nil
+	}
+
+	return a.conn
+}
+
 
 func Context() (context.Context) {
 	return context.Background()
