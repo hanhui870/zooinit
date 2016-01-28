@@ -20,6 +20,7 @@ func TestOriginalEtcdClient(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	kapi := client.NewKeysAPI(c)
 	// set "/foo" key with "bar" value
 	log.Print("Setting '/foo' key with 'bar' value")
@@ -80,6 +81,15 @@ func TestClusterApi(t *testing.T) {
 		t.Error("CreateInOrder Error /haimi/service/order:", err)
 	}else{
 		t.Logf("CreateInOrder /haimi/service/order: %q", resp)
+	}
+
+	list, err:=api.Members()
+	if err!=nil {
+		t.Error("Fetch members error:", err)
+	}else{
+		for _, value := range list.Members {
+			t.Logf("Found Member:", value.Name, value.ClientURLs, value.PeerURLs, value.Id)
+		}
 	}
 
 }

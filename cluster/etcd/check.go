@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+	"errors"
 )
 
 // An cluster server health check
@@ -29,7 +30,9 @@ func (s *ServerCheck) IsHealth() bool {
 		return false
 	}
 
-	return CheckHealth(s.Client)
+	isHealthy, _:=CheckHealth(s.Client)
+
+	return isHealthy
 }
 
 // check cluster is cluster
@@ -38,11 +41,12 @@ func (h *health) IsHealth() bool {
 }
 
 // check health need a max timeout 1s for quick fail
-func CheckHealth(client string) bool {
+func CheckHealth(client string) (bool, error) {
 	cli := &http.Client{Timeout: time.Second}
 	resp, err := cli.Get(client + "/health")
 	if err != nil {
-		return false
+		//cannot use nil as type bool in return argument
+		return false, err
 	}
 
 	var heal health
@@ -51,9 +55,8 @@ func CheckHealth(client string) bool {
 
 	err = json.Unmarshal(body, &heal)
 	if err != nil {
-		println("Fetch :", string(body), err.Error())
-		return false
+		return false ,errors.New("Error /v2/json parse:" + string(body) +" "+ err.Error())
 	}
 
-	return heal.IsHealth()
+	return heal.IsHealth(), nil
 }
