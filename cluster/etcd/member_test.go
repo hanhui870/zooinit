@@ -15,7 +15,14 @@ func TestMembersTestApi(t *testing.T) {
 		t.Error("Fetch members error:", err)
 	}else{
 		for _, value := range list {
-			t.Logf("Found Member:", value.Name, value.ClientURLs, value.PeerURLs, value.ID)
+			t.Log("Found Member:", value.Name, value.ClientURLs, value.PeerURLs, value.ID)
 		}
+	}
+
+	cfg, err:=api.GetInitialClusterSetting()
+	if err!=nil {
+		t.Error("GetInitialClusterSetting error:", err)
+	}else{
+		t.Log("GetInitialClusterSetting:", cfg)
 	}
 }

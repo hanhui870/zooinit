@@ -65,6 +65,19 @@ zooinit cluster -f config/config.ini clustername
         -discovery http://192.168.4.108:2379/v2/keys/_etcd/registry/fdsafdsafdsafdsa
     4. Improve: Will not kill the initial one. The zooinit process will daemon run as a watch dog.
 
+# Etcd qurorum Add
+
+    1. Fetch existing qurorum inital-cluster config
+    2. Post to http://registry.alishui.com:2379/v2/members, add peerUrls, will return Member ID.
+    3. Start up new cluster with  -initial-cluster and -initial-cluster-state existing
+
+    etcd --data-dir /tmp/etcd/data -wal-dir /tmp/etcd/wal -name etcd.bootstrap.192.168.4.108  \
+    -listen-peer-urls http://192.168.4.108:2380 -listen-client-urls http://127.0.0.1:2379,http://192.168.4.108:2379 \
+    -advertise-client-urls http://192.168.4.108:2379  \
+    -initial-cluster etcd.bootstrap.192.168.4.202=http://192.168.4.202:2380,etcd.bootstrap.192.168.4.220=http://192.168.4.220:2380,etcd.bootstrap.192.168.4.221=http://192.168.4.221:2380,etcd.bootstrap.192.168.4.108=http://192.168.4.108:2380  \
+    -initial-cluster-state existing
+
+
 
 ## QA
     Q: 2016-01-21 11:28:15.499518 E | etcdmain: member with duplicated name has registered with discovery service token(http://192.168.4.108:2379/v2/keys/_etcd/registry/fdsafdsafdsafdsa).

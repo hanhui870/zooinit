@@ -5,14 +5,14 @@ import (
 
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
-	"time"
 	"log"
+	"time"
 )
 
 func TestOriginalEtcdClient(t *testing.T) {
 	cfg := client.Config{
-		Endpoints:               []string{"http://registry.alishui.com:2379"},
-		Transport:               client.DefaultTransport,
+		Endpoints: []string{"http://registry.alishui.com:2379"},
+		Transport: client.DefaultTransport,
 		// set timeout per request to fail fast when the target endpoint is unavailable
 		HeaderTimeoutPerRequest: time.Second,
 	}
@@ -51,35 +51,35 @@ func TestClusterApi(t *testing.T) {
 		t.Error("NewApi error:", err)
 	}
 
-	resp, err:=api.Conn().Delete(context.Background(), "/haimi/service/discover", nil)
+	resp, err := api.Conn().Delete(context.Background(), "/haimi/service/discover", nil)
 	if err != nil {
 		//may not exist
 		t.Log("Delete Error /haimi/service/discover:", err)
-	}else{
+	} else {
 		t.Logf("Delete /haimi/service/discover: %q", resp)
 	}
 
-	resp, err=api.Conn().Create(context.Background(), "/haimi/service/discover", "test,hahahahah")
+	resp, err = api.Conn().Create(context.Background(), "/haimi/service/discover", "test,hahahahah")
 	if err != nil {
 		//Key already exists (/haimi/service/discover) [11]
 		t.Error("Create Error /haimi/service/discover:", err)
-	}else{
+	} else {
 		t.Logf("Create /haimi/service/discover: %q", resp)
 	}
 
-	resp, err=api.Conn().Set(context.Background(), "/haimi/service/discover", "test,hahahahah", &client.SetOptions{TTL:1*time.Minute})
+	resp, err = api.Conn().Set(context.Background(), "/haimi/service/discover", "test,hahahahah", &client.SetOptions{TTL: 1 * time.Minute})
 	if err != nil {
 		//Key already exists (/haimi/service/discover) [11]
 		t.Error("Set Error /haimi/service/discover:", err)
-	}else{
+	} else {
 		t.Logf("Set /haimi/service/discover: %q", resp)
 	}
 
-	resp, err=api.Conn().CreateInOrder(context.Background(), "/haimi/service/order", "test,hahahahah", &client.CreateInOrderOptions{TTL:1*time.Minute})
+	resp, err = api.Conn().CreateInOrder(context.Background(), "/haimi/service/order", "test,hahahahah", &client.CreateInOrderOptions{TTL: 1 * time.Minute})
 	if err != nil {
 		//Key already exists (/haimi/service/discover) [11]
 		t.Error("CreateInOrder Error /haimi/service/order:", err)
-	}else{
+	} else {
 		t.Logf("CreateInOrder /haimi/service/order: %q", resp)
 	}
 
