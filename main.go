@@ -8,6 +8,11 @@ import (
 
 func main() {
 	app := cli.NewApp()
+	app.Author = "bruce"
+	app.Email = "bruce@haimi.com"
+	app.Copyright = "haimi.com All rights reseverd."
+	app.Name = "Zooinit"
+	app.Usage = "An high available service for Zookeeper/Consul/Hadoop alike clusters bootstraping and being watched."
 	app.Version = "0.0.9"
 
 	cfgFlag := &cli.StringFlag{
