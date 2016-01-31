@@ -13,7 +13,7 @@ func NewWatchDog(env *envInfo, internal string, discovery string) *WatchDog {
 	return &WatchDog{env: env, internalClientUrl: internal, discoveryClientUrl: discovery}
 }
 
-// Watch dog run
+// TODO Watch dog run
 func (w *WatchDog) Run() {
 
 }

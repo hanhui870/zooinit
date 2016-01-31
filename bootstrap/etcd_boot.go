@@ -14,8 +14,8 @@ import (
 )
 
 const (
-// INTERNAL discovery findpath
-	INTERNAL_FINDPATH = "/zooinit/boot"
+	// INTERNAL discovery findpath
+	INTERNAL_FINDPATH         = "/zooinit/boot"
 	CLUSTER_BOOTSTRAP_TIMEOUT = 5 * time.Minute
 )
 
@@ -30,6 +30,8 @@ func BootstrapEtcd(env *envInfo) error {
 		env.logger.Fatal("Etcd NewApi error:", err)
 	}
 
+	// Need declare for terminate
+	var internalCmd *exec.Cmd
 	if env.isSelfIp {
 		internalPeerUrl := "http://" + env.internalHost + ":" + env.internalPeer
 
@@ -40,11 +42,11 @@ func BootstrapEtcd(env *envInfo) error {
 		// data-dir can't be same with discovery service.
 		intName := "etcd.initial"
 		intExecCmd := "etcd --data-dir " + env.internalDataDir + " -wal-dir " + env.internalWalDir + " -name " + intName +
-		" -initial-advertise-peer-urls " + internalPeerUrl +
-		" -listen-peer-urls " + internalPeerUrl +
-		" -listen-client-urls " + internalClientUrl +
-		" -advertise-client-urls " + internalClientUrl +
-		" -initial-cluster " + intName + "=" + internalPeerUrl
+			" -initial-advertise-peer-urls " + internalPeerUrl +
+			" -listen-peer-urls " + internalPeerUrl +
+			" -listen-client-urls " + internalClientUrl +
+			" -advertise-client-urls " + internalClientUrl +
+			" -initial-cluster " + intName + "=" + internalPeerUrl
 
 		env.logger.Println("Etcd Internal ExecCmd:", intExecCmd)
 
@@ -54,7 +56,7 @@ func BootstrapEtcd(env *envInfo) error {
 			env.logger.Fatalln("Error ParseCmdStringWithParams internal service:", err)
 		}
 
-		internalCmd := exec.Command(path, args...)
+		internalCmd = exec.Command(path, args...)
 		loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
 		loggerIOAdapter.SetPrefix("Etcd internal server: ")
 		internalCmd.Stdout = loggerIOAdapter
@@ -82,7 +84,7 @@ func BootstrapEtcd(env *envInfo) error {
 			})
 			if err != nil {
 				env.logger.Fatal("Error check internal error: ", err)
-			}else if isHealth != true {
+			} else if isHealth != true {
 				env.logger.Fatal("Error check internal server health: ", isHealth)
 				env.logger.Fatal("Cluster bootstrap faild: failed to bootstrap in ", internalCheckout.String())
 			}
@@ -108,10 +110,10 @@ func BootstrapEtcd(env *envInfo) error {
 				env.logger.Fatal("Set TTL for ", INTERNAL_FINDPATH, " error:", err)
 			}
 
-			env.logger.Println("Set Qurorum ", INTERNAL_FINDPATH + "/_config/size to ", env.qurorum)
-			_, err = api.Conn().Set(etcd.Context(), INTERNAL_FINDPATH + "/_config/size", strconv.Itoa(env.qurorum), nil)
+			env.logger.Println("Set Qurorum ", INTERNAL_FINDPATH+"/_config/size to ", env.qurorum)
+			_, err = api.Conn().Set(etcd.Context(), INTERNAL_FINDPATH+"/_config/size", strconv.Itoa(env.qurorum), nil)
 			if err != nil {
-				env.logger.Fatal("Set Qurorum ", INTERNAL_FINDPATH + "/_config/size error: ", err)
+				env.logger.Fatal("Set Qurorum ", INTERNAL_FINDPATH+"/_config/size error: ", err)
 			}
 		}
 	}
@@ -123,12 +125,12 @@ func BootstrapEtcd(env *envInfo) error {
 	env.logger.Println("Etcd Discovery ClientUrl:", discoveryClientUrl)
 
 	disExecCmd := env.cmd + " --data-dir " + env.cmdDataDir + " -wal-dir " + env.cmdWalDir +
-	" -name " + "etcd.bootstrap." + env.localIP.String() +
-	" -initial-advertise-peer-urls " + discoveryPeerUrl +
-	" -listen-peer-urls " + discoveryPeerUrl +
-	" -listen-client-urls http://127.0.0.1:2379," + discoveryClientUrl +
-	" -advertise-client-urls " + discoveryClientUrl +
-	" -discovery " + internalClientUrl + "/v2/keys" + INTERNAL_FINDPATH
+		" -name " + "etcd.bootstrap." + env.localIP.String() +
+		" -initial-advertise-peer-urls " + discoveryPeerUrl +
+		" -listen-peer-urls " + discoveryPeerUrl +
+		" -listen-client-urls http://127.0.0.1:2379," + discoveryClientUrl +
+		" -advertise-client-urls " + discoveryClientUrl +
+		" -discovery " + internalClientUrl + "/v2/keys" + INTERNAL_FINDPATH
 
 	env.logger.Println("Etcd Discovery ExecCmd: ", disExecCmd)
 
@@ -162,12 +164,19 @@ func BootstrapEtcd(env *envInfo) error {
 	})
 	if err != nil {
 		env.logger.Fatal("Error check discovery error: ", err)
-	}else if isHealth != true {
+	} else if isHealth != true {
 		env.logger.Fatal("Error check discovery server health: ", isHealth)
 		env.logger.Fatal("Cluster bootstrap faild: failed to bootstrap in ", env.timeout.String())
 	}
 
-	//watch dog run
+	// Close internal service
+	env.logger.Println("Cluster etcd service is booted. Internal service is going to be terminated.")
+	if internalCmd != nil {
+		internalCmd.Process.Kill()
+	}
+
+	// Watch dog run
+	env.logger.Println("Cluster watch dog is going to run...")
 	w := NewWatchDog(env, internalClientUrl, discoveryClientUrl)
 	go w.Run()
 
@@ -186,7 +195,7 @@ func LoopTimeoutRequest(timeout time.Duration, env *envInfo, routine func() (res
 	start := time.Now()
 	for {
 		result, err = routine()
-		if !result || err!=nil {
+		if !result || err != nil {
 			charlist = append(charlist, byte('.'))
 			// sleep 100ms
 			end := time.Now()
