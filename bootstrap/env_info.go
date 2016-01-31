@@ -9,6 +9,7 @@ import (
 	"github.com/go-ini/ini"
 	"strings"
 
+	"zooinit/config"
 	loglocal "zooinit/log"
 	"zooinit/utility"
 )
@@ -58,7 +59,7 @@ type envInfo struct {
 
 // New env from file
 func NewEnvInfoFile(fname string) *envInfo {
-	iniobj := GetConfigInstance(fname)
+	iniobj := config.GetConfigInstance(fname)
 
 	return NewEnvInfo(iniobj)
 }
@@ -72,60 +73,6 @@ func NewEnvInfo(iniobj *ini.File) *envInfo {
 		log.Fatalln("Config of service is empty.")
 	}
 
-	discovery := sec.Key("discovery").String()
-	if discovery == "" {
-		log.Fatalln("Config of discovery is empty.")
-	}
-	if strings.Count(discovery, ":") != 2 {
-		log.Fatalln("Config of discovery need ip:port:peer format.")
-	}
-	obj.discoveryHost = discovery[0:strings.Index(discovery, ":")]
-	obj.discoveryPort = discovery[strings.Index(discovery, ":")+1 : strings.LastIndex(discovery, ":")]
-	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":")+1:]
-
-	internal := sec.Key("internal").String()
-	if internal == "" {
-		log.Fatalln("Config of internal is empty.")
-	}
-	if strings.Count(internal, ":") != 1 {
-		log.Fatalln("Config of internal need port:peer format.")
-	}
-	// Must be identical with discoveryHost
-	obj.internalHost = obj.discoveryHost
-	obj.internalPort = internal[0:strings.Index(internal, ":")]
-	obj.internalPeer = internal[strings.LastIndex(internal, ":")+1:]
-
-	path := sec.Key("internal.data.dir").String()
-	if path == "" {
-		log.Fatalln("Config of internal.data.dir is empty.")
-	}
-	obj.internalDataDir = path
-
-	path = sec.Key("internal.wal.dir").String()
-	if path == "" {
-		log.Fatalln("Config of internal.wal.dir is empty.")
-	}
-	obj.internalWalDir = path
-
-	qurorum, err := sec.Key("qurorum").Int()
-	if err != nil {
-		log.Fatalln("Config of qurorum is error:", err)
-	}
-	if qurorum < 3 {
-		log.Fatalln("Config of qurorum must >=3")
-	}
-	obj.qurorum = qurorum
-
-	timeout, err := sec.Key("timeout").Float64()
-	if err != nil {
-		log.Fatalln("Config of timeout is error:", err)
-	}
-	if timeout == 0 {
-		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
-	} else {
-		obj.timeout = time.Duration(int(timeout * 1000000000))
-	}
-
 	obj.logPath = sec.Key("log.path").String()
 	if obj.logPath == "" {
 		log.Fatalln("Config of log.path is empty.")
@@ -134,20 +81,74 @@ func NewEnvInfo(iniobj *ini.File) *envInfo {
 	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
 	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
 
+	discovery := sec.Key("discovery").String()
+	if discovery == "" {
+		obj.logger.Fatalln("Config of discovery is empty.")
+	}
+	if strings.Count(discovery, ":") != 2 {
+		obj.logger.Fatalln("Config of discovery need ip:port:peer format.")
+	}
+	obj.discoveryHost = discovery[0:strings.Index(discovery, ":")]
+	obj.discoveryPort = discovery[strings.Index(discovery, ":")+1 : strings.LastIndex(discovery, ":")]
+	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":")+1:]
+
+	internal := sec.Key("internal").String()
+	if internal == "" {
+		obj.logger.Fatalln("Config of internal is empty.")
+	}
+	if strings.Count(internal, ":") != 1 {
+		obj.logger.Fatalln("Config of internal need port:peer format.")
+	}
+	// Must be identical with discoveryHost
+	obj.internalHost = obj.discoveryHost
+	obj.internalPort = internal[0:strings.Index(internal, ":")]
+	obj.internalPeer = internal[strings.LastIndex(internal, ":")+1:]
+
+	path := sec.Key("internal.data.dir").String()
+	if path == "" {
+		obj.logger.Fatalln("Config of internal.data.dir is empty.")
+	}
+	obj.internalDataDir = path
+
+	path = sec.Key("internal.wal.dir").String()
+	if path == "" {
+		obj.logger.Fatalln("Config of internal.wal.dir is empty.")
+	}
+	obj.internalWalDir = path
+
+	qurorum, err := sec.Key("qurorum").Int()
+	if err != nil {
+		obj.logger.Fatalln("Config of qurorum is error:", err)
+	}
+	if qurorum < 3 {
+		obj.logger.Fatalln("Config of qurorum must >=3")
+	}
+	obj.qurorum = qurorum
+
+	timeout, err := sec.Key("timeout").Float64()
+	if err != nil {
+		obj.logger.Fatalln("Config of timeout is error:", err)
+	}
+	if timeout == 0 {
+		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
+	} else {
+		obj.timeout = time.Duration(int(timeout * 1000000000))
+	}
+
 	obj.cmd = sec.Key("boot.cmd").String()
 	if obj.cmd == "" {
-		log.Fatalln("Config of boot.cmd is empty.")
+		obj.logger.Fatalln("Config of boot.cmd is empty.")
 	}
 
 	path = sec.Key("boot.data.dir").String()
 	if path == "" {
-		log.Fatalln("Config of boot.data.dir is empty.")
+		obj.logger.Fatalln("Config of boot.data.dir is empty.")
 	}
 	obj.cmdDataDir = path
 
 	path = sec.Key("boot.wal.dir").String()
 	if path == "" {
-		log.Fatalln("Config of boot.wal.dir is empty.")
+		obj.logger.Fatalln("Config of boot.wal.dir is empty.")
 	}
 	obj.cmdWalDir = path
 
