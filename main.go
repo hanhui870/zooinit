@@ -4,6 +4,7 @@ import (
 	"github.com/codegangsta/cli"
 	"os"
 	"zooinit/bootstrap"
+	"zooinit/cluster"
 )
 
 func main() {
@@ -34,7 +35,7 @@ func main() {
 		{
 			Name:   "cluster",
 			Usage:  "Usage: " + os.Args[0] + " cluster -f config.ini clustername \nBootstrop the cluster configured in the configuration file.",
-			Action: bootstrap.Bootstrap,
+			Action: cluster.Bootstrap,
 			Flags: []cli.Flag{
 				cfgFlag,
 			},
