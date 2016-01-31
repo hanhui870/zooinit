@@ -44,7 +44,10 @@ func NewEnvInfoFile(fname string, cluster string) *envInfo {
 func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	obj := new(envInfo)
 
-	sec := iniobj.Section(CONFIG_SECTION + "." + cluster)
+	sec, err := iniobj.GetSection(CONFIG_SECTION + "." + cluster)
+	if err != nil {
+		log.Fatalln("Config of section: " + CONFIG_SECTION + "." + cluster + " is well configured.")
+	}
 	obj.service = sec.Key("service").String()
 	if obj.service == "" {
 		log.Fatalln("Config of service is empty.")
