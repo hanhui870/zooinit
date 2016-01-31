@@ -11,7 +11,7 @@ Bootstrop the basic etcd based high available discovery service for low level us
 3. etcd发现服务启动后,可以用于启动consul, zookeeper等分布式服务.
 4. Need to build project inside Golang dev docker container, then distribute binary file.
 5. The discovery configuration can use domainname SRV tech to discovery available host.
-
+6. Because the app will use with docker, so it will not support distinct ports cluster bootstrap.
 
 
 ## Usage
