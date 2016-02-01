@@ -1,6 +1,7 @@
 package etcd
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"time"
@@ -91,7 +92,7 @@ func (a *ApiMembers) Conn() client.MembersAPI {
 
 func (a *ApiMembers) GetInitialClusterSetting() (config string, err error) {
 	if a == nil {
-		return "", nil
+		return "", errors.New("ApiMembers obj nil.")
 	}
 
 	list, err := a.Conn().List(Context())
@@ -111,6 +112,30 @@ func (a *ApiMembers) GetInitialClusterSetting() (config string, err error) {
 	}
 
 	return strings.Join(cfgs, ","), nil
+}
+
+func (a *ApiMembers) GetInitialClusterEndpoints() (config []string, err error) {
+	if a == nil {
+		return nil, errors.New("ApiMembers obj nil.")
+	}
+
+	list, err := a.Conn().List(Context())
+	if err != nil {
+		return nil, err
+	}
+
+	var cfgs []string
+	for _, unit := range list {
+		if len(unit.PeerURLs) < 1 {
+			continue
+		}
+		// may exist mutiple url
+		for _, peer := range unit.PeerURLs {
+			cfgs = append(cfgs, peer)
+		}
+	}
+
+	return cfgs, nil
 }
 
 // Stat use this method
