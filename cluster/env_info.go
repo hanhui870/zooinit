@@ -32,6 +32,9 @@ type envInfo struct {
 
 	// boot event related
 	eventOnStart string
+
+	// app start up configuration, app can fetch through env variables
+	config map[string]string
 }
 
 // New env from file
@@ -44,9 +47,13 @@ func NewEnvInfoFile(fname string, cluster string) *envInfo {
 func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	obj := new(envInfo)
 
-	sec, err := iniobj.GetSection(CONFIG_SECTION + "." + cluster)
+	// init map
+	obj.config = make(map[string]string)
+
+	clusterSection := CONFIG_SECTION + "." + cluster
+	sec, err := iniobj.GetSection(clusterSection)
 	if err != nil {
-		log.Fatalln("Config of section: " + CONFIG_SECTION + "." + cluster + " is well configured.")
+		log.Fatalln("Config of section: " + clusterSection + " is not well configured.")
 	}
 	obj.service = sec.Key("service").String()
 	if obj.service == "" {
@@ -98,6 +105,23 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	obj.discoveryTarget = sec.Key("event.OnStart").String()
 	if obj.discoveryTarget == "" {
 		obj.logger.Fatalln("Config of event.OnStart is empty.")
+	}
+
+	// store app config
+	appSection := clusterSection + ".config"
+	secApp, err := iniobj.GetSection(appSection)
+	if err != nil {
+		obj.logger.Fatalln("Config of app config section: " + appSection + " is well configured.")
+	}
+	obj.config = secApp.KeysHash()
+	if len(obj.config) > 0 {
+		obj.logger.Println("Fetch app config section " + appSection + " KV values:")
+
+		for key, value := range obj.config {
+			obj.logger.Println("Key:", key, " Value:", value)
+		}
+	} else {
+		obj.logger.Println("Fetch app config section: empty")
 	}
 
 	return obj
