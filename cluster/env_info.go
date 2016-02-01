@@ -2,12 +2,14 @@ package cluster
 
 import (
 	"log"
+	"net"
 	"time"
 
 	"github.com/go-ini/ini"
 
 	"zooinit/config"
 	loglocal "zooinit/log"
+	"zooinit/utility"
 )
 
 // This cluster service bootstrap env info
@@ -29,6 +31,11 @@ type envInfo struct {
 
 	// Logger instance for service
 	logger *log.Logger
+
+	// localIP for boot
+	localIP net.IP
+	// Ip hint use to found which ip for boot bind
+	iphint string
 
 	// boot event related
 	eventOnStart string
@@ -55,7 +62,8 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	if err != nil {
 		log.Fatalln("Config of section: " + clusterSection + " is not well configured.")
 	}
-	obj.service = sec.Key("service").String()
+
+	obj.service = cluster
 	if obj.service == "" {
 		log.Fatalln("Config of service is empty.")
 	}
@@ -81,6 +89,7 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	if obj.discoveryPath == "" {
 		obj.logger.Fatalln("Config of discover.path is empty.")
 	}
+	obj.discoveryPath = obj.discoveryPath + "/" + obj.service
 
 	qurorum, err := sec.Key("qurorum").Int()
 	if err != nil {
@@ -102,10 +111,23 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	}
 
 	// Event process
-	obj.discoveryTarget = sec.Key("event.OnStart").String()
-	if obj.discoveryTarget == "" {
+	obj.eventOnStart = sec.Key("event.OnStart").String()
+	if obj.eventOnStart == "" {
 		obj.logger.Fatalln("Config of event.OnStart is empty.")
 	}
+
+	obj.iphint = sec.Key("ip.hint").String()
+	if obj.iphint == "" {
+		obj.logger.Fatalln("Config of ip.hint is empty.")
+	}
+
+	// Find localip
+	localip, err := utility.GetLocalIPWithIntranet(obj.iphint)
+	if err != nil {
+		obj.logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
+	}
+	obj.localIP = localip
+	obj.logger.Println("Found localip for boot:", obj.localIP)
 
 	// store app config
 	appSection := clusterSection + ".config"

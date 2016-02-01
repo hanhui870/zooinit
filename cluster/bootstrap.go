@@ -5,9 +5,11 @@ import (
 	"os"
 	"time"
 
-	"zooinit/config"
-
 	"github.com/codegangsta/cli"
+
+	"strings"
+	"zooinit/cluster/etcd"
+	"zooinit/config"
 )
 
 const (
@@ -31,7 +33,22 @@ func Bootstrap(c *cli.Context) {
 	cluster := c.Args()[0]
 	env = NewEnvInfo(iniobj, cluster)
 
-	println("hello world.")
+	env.logger.Println("Logger path:", env.logPath)
+	env.logger.Println("Timeout:", env.timeout.String())
+	env.logger.Println("Qurorum:", env.qurorum)
+	env.logger.Println("Discover method:", env.discoveryMethod)
+	env.logger.Println("Discover path:", env.discoveryPath)
+	env.logger.Println("env.discoveryTarget for fetch members:", env.discoveryTarget)
+	memApi, err := etcd.NewApiMember(strings.Split(env.discoveryTarget, ","))
+	if err != nil {
+		env.logger.Fatalln("Etcd.NewApiMember() found error:", err)
+	}
+	config, err := memApi.GetInitialClusterEndpoints()
+	env.logger.Println("Discovery service find latest endpoints:", config)
+	kvApi, err := etcd.NewApiKeys(config)
+
+	kvApi.Conn()
+
 }
 
 // Fetch bootstrap env instance
