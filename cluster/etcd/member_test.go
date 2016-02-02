@@ -10,19 +10,26 @@ func TestMembersTestApi(t *testing.T) {
 		t.Error("NewApi error:", err)
 	}
 
-	list, err:=api.Conn().List(Context())
-	if err!=nil {
+	list, err := api.Conn().List(Context())
+	if err != nil {
 		t.Error("Fetch members error:", err)
-	}else{
+	} else {
 		for _, value := range list {
 			t.Log("Found Member:", value.Name, value.ClientURLs, value.PeerURLs, value.ID)
 		}
 	}
 
-	cfg, err:=api.GetInitialClusterSetting()
-	if err!=nil {
+	cfg, err := api.GetInitialClusterSetting()
+	if err != nil {
 		t.Error("GetInitialClusterSetting error:", err)
-	}else{
+	} else {
 		t.Log("GetInitialClusterSetting:", cfg)
+	}
+
+	urls, err := api.GetInitialClusterEndpoints()
+	if err != nil {
+		t.Error("GetInitialClusterEndpoints error:", err)
+	} else {
+		t.Log("GetInitialClusterEndpoints:", urls)
 	}
 }

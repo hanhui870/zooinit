@@ -126,12 +126,12 @@ func (a *ApiMembers) GetInitialClusterEndpoints() (config []string, err error) {
 
 	var cfgs []string
 	for _, unit := range list {
-		if len(unit.PeerURLs) < 1 {
+		if len(unit.ClientURLs) < 1 {
 			continue
 		}
 		// may exist mutiple url
-		for _, peer := range unit.PeerURLs {
-			cfgs = append(cfgs, peer)
+		for _, url := range unit.ClientURLs {
+			cfgs = append(cfgs, url)
 		}
 	}
 
