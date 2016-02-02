@@ -9,6 +9,7 @@ import (
 
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
+	"reflect"
 )
 
 const (
@@ -154,9 +155,19 @@ func Context() context.Context {
 
 // error type need to be identical with cast type. here point.
 func EqualEtcdError(err error, code int) bool {
-	if err, ok := err.(*client.Error); ok {
-		if err.Code == code {
-			return true
+	tp := reflect.TypeOf(err)
+	switch tp.Kind() {
+	case reflect.Ptr:
+		if err, ok := err.(*client.Error); ok {
+			if err.Code == code {
+				return true
+			}
+		}
+	default:
+		if err, ok := err.(client.Error); ok {
+			if err.Code == code {
+				return true
+			}
 		}
 	}
 

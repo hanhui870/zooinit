@@ -3,12 +3,11 @@ package cluster
 import (
 	"fmt"
 	"os"
-	"time"
 	"sync"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/coreos/etcd/client"
-
 
 	"strings"
 	"zooinit/cluster/etcd"
@@ -24,7 +23,7 @@ var (
 	env *envInfo
 
 	// Discovery service latest endpoints
-	lastestEndpoints []string
+	lastestEndpoints  []string
 	endpointsSyncLock sync.Mutex
 )
 
@@ -59,29 +58,30 @@ func GetEnvInfo() *envInfo {
 }
 
 // init cluster bootstrap info
-func initializeClusterDiscoveryInfo(){
+func initializeClusterDiscoveryInfo() {
 	kvApi, err := etcd.NewApiKeys(lastestEndpoints)
 	if err != nil {
 		env.logger.Fatalln("Etcd.NewApiKeys() found error:", err)
 	}
 
 	// Set qurorum size
-	resp, err:=kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir:true, TTL:CLUSTER_BOOTSTRAP_TIMEOUT, PrevExist:client.PrevNoExist})
-	if err!=nil {
-		if  {
-			
+	resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: CLUSTER_BOOTSTRAP_TIMEOUT, PrevExist: client.PrevNoExist})
+	if err != nil {
+		//ignore exist error
+		if !etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
+			// check if exist need to add qurorum
+			env.logger.Fatalln("Etcd.Api() set "+env.discoveryPath+" error:", err)
+		} else {
+			env.logger.Println("Etcd.Api() set " + env.discoveryPath + " notice: node exist, will add qurorum directly.")
 		}
-		// check if exist need to add qurorum
-		env.logger.Fatalln("Etcd.Api() set "+env.discoveryPath+" error:", err)
-	}else{
+
+	} else {
 		env.logger.Println("Etcd.Api() set "+env.discoveryPath+" ok:", resp)
 	}
 
-
-
 }
 
-func UpdateLatestEndpoints(){
+func UpdateLatestEndpoints() {
 	memApi, err := etcd.NewApiMember(strings.Split(env.discoveryTarget, ","))
 	if err != nil {
 		env.logger.Fatalln("Etcd.NewApiMember() found error:", err)
@@ -95,5 +95,5 @@ func UpdateLatestEndpoints(){
 	// lock for update
 	endpointsSyncLock.Lock()
 	defer endpointsSyncLock.Unlock()
-	lastestEndpoints=tmpEndpoints
+	lastestEndpoints = tmpEndpoints
 }
