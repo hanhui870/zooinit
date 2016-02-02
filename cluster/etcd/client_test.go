@@ -6,6 +6,7 @@ import (
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
 	"log"
+	"reflect"
 	"time"
 )
 
@@ -95,5 +96,17 @@ func TestErrorCodeClient(t *testing.T) {
 
 	if EqualEtcdError(err, client.ErrorCodeEventIndexCleared) {
 		t.Error("EqualEtcdError(err, client.ErrorCodeEventIndexCleared) Found error.")
+	}
+
+	var err2 error = *err
+	tp := reflect.TypeOf(err2)
+	if tp.Kind() == reflect.Ptr {
+		t.Error("reflect.TypeOf(err2) error, is not Ptr.")
+	}
+
+	var errPtr error = err
+	tp = reflect.TypeOf(errPtr)
+	if tp.Kind() != reflect.Ptr {
+		t.Error("reflect.TypeOf(err2) error, is not Ptr.")
 	}
 }
