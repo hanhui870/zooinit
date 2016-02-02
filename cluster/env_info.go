@@ -14,8 +14,10 @@ import (
 
 // This cluster service bootstrap env info
 type envInfo struct {
-	//service name, also use for log
+	// service name, also use for log
 	service string
+	// Cluster power backend
+	clusterBackend string
 
 	// Bootstrap etcd cluster service for boot other cluster service.
 	discoveryMethod string
@@ -71,6 +73,11 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	obj.logPath = sec.Key("log.path").String()
 	if obj.logPath == "" {
 		log.Fatalln("Config of log.path is empty.")
+	}
+
+	obj.clusterBackend = sec.Key("cluster.backend").String()
+	if obj.clusterBackend == "" {
+		log.Fatalln("Config of cluster.backend is empty.")
 	}
 	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
 	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
