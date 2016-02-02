@@ -84,3 +84,16 @@ func TestClusterApi(t *testing.T) {
 	}
 
 }
+
+func TestErrorCodeClient(t *testing.T) {
+	//type need to be identical with cast type.
+	//err:=client.Error{Code:client.ErrorCodeNodeExist, Message:"node exist.", Index:34}
+	err := &client.Error{Code: client.ErrorCodeNodeExist, Message: "node exist.", Index: 34}
+	if !EqualEtcdError(err, client.ErrorCodeNodeExist) {
+		t.Error("EqualEtcdError(err, client.ErrorCodeNodeExist) Found error.")
+	}
+
+	if EqualEtcdError(err, client.ErrorCodeEventIndexCleared) {
+		t.Error("EqualEtcdError(err, client.ErrorCodeEventIndexCleared) Found error.")
+	}
+}

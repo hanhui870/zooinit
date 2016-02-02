@@ -4,16 +4,16 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
-
-	"strings"
 )
 
 const (
 	// 1s is too short
+	// TODO check_test.go:23: Get http://registry.alishui.com:2379/health: net/http:request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)
 	DEFALUT_CLIENT_TIMEOUT           = 5 * time.Second
 	DEFAULT_CLIENT_KEEPALIVE         = 30 * time.Second
 	DEFALUT_CLIENT_TLS_SHAKE_TIMEOUT = 5 * time.Second
@@ -150,4 +150,15 @@ func NewApiStats(endpoints []string) (*ApiStats, error) {
 
 func Context() context.Context {
 	return context.Background()
+}
+
+// error type need to be identical with cast type. here point.
+func EqualEtcdError(err error, code int) bool {
+	if err, ok := err.(*client.Error); ok {
+		if err.Code == code {
+			return true
+		}
+	}
+
+	return false
 }
