@@ -57,7 +57,14 @@ func Bootstrap(c *cli.Context) {
 	// update endpoints
 	UpdateLatestEndpoints()
 
+	// register node
 	initializeClusterDiscoveryInfo()
+
+	// loop wait qurorum size of nodes is registed
+
+	// start up local node
+
+	// loop wait cluster is up
 }
 
 // Fetch bootstrap env instance
@@ -104,6 +111,7 @@ func initializeClusterDiscoveryInfo() {
 		env.logger.Println("Etcd.Api() CreateInOrder ok:", resp)
 	}
 
+	// Finish
 }
 
 func UpdateLatestEndpoints() {
