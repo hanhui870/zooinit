@@ -20,6 +20,14 @@ func TestSliceNormalTest(t *testing.T) {
 	if !reflect.DeepEqual(order, []string{"1", "333", "444", "555"}) {
 		t.Error("Found RemoveDuplicateInOrder error:", order)
 	}
+
+	if !InSlice(order, "333") {
+		t.Error("Found InSlice(order, 333) error")
+	}
+
+	if InSlice(order, "8") {
+		t.Error("Found InSlice(order, 8) error")
+	}
 }
 
 func TestStringSlice(t *testing.T) {

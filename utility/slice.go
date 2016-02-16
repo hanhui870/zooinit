@@ -1,5 +1,6 @@
 package utility
 
+// TODO can improve with reflect in any type
 // Remove dulicates string in a slice keep order
 func RemoveDuplicateInOrder(elements []string) []string {
 	check := map[string]bool{}
@@ -31,4 +32,14 @@ func RemoveDuplicateUnOrder(elements []string) []string {
 		uniqueSlice = append(uniqueSlice, key)
 	}
 	return uniqueSlice
+}
+
+func InSlice(elements []string, find string) bool {
+	for _, value := range elements {
+		if value == find {
+			return true
+		}
+	}
+
+	return false
 }
