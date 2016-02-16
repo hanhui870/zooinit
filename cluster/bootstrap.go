@@ -189,12 +189,11 @@ func loopUntilQurorumIsReached() {
 			env.logger.Println("Get election qurorum size, after remove duplicates:", len(nodeList), "members:", nodeList)
 
 			if int64(len(nodeList)) >= qurorumSize {
-				env.logger.Println("Get election qurorum finished:", nodeList[:qurorumSize])
-
 				membersSyncLock.Lock()
 				membersElected = nodeList[:qurorumSize]
 				membersSyncLock.Unlock()
 
+				env.logger.Println("Get election qurorum finished:", membersElected)
 				break
 			}
 		}
@@ -202,6 +201,11 @@ func loopUntilQurorumIsReached() {
 }
 
 func bootstrapLocalClusterMember() {
+	env.logger.Println("Started to boot Local cluster member, local ip:", env.localIP.String())
+
+	if !utility.InSlice(membersElected, env.localIP.String()) {
+		env.logger.Fatalln("BootstrapLocalClusterMember error, localip is not in the elected list.")
+	}
 
 }
 
