@@ -1,10 +1,9 @@
 package utility
 
 import (
-	"testing"
 	"net"
 	"reflect"
-	"strings"
+	"testing"
 )
 
 func TestFetchIPList(t *testing.T) {
@@ -34,14 +33,14 @@ func TestFetchIPList(t *testing.T) {
 	ip, err = GetLocalIPWithIntranet("192.168.4.199")
 	if err != nil {
 		t.Log("GetLocalIPWithIntranet of 192.168.4.199 Error:", err)
-	}else {
+	} else {
 		t.Log("Find the smae intranet of 192.168.4.199: ", ip)
 	}
 
 	ip, err = GetLocalIPWithIntranet("192.168.1.4")
 	if err != nil {
 		t.Log("GetLocalIPWithIntranet of 192.168.1.4 Error:", err)
-	}else {
+	} else {
 		t.Log("Find the smae intranet of 192.168.1.4: ", ip)
 	}
 
@@ -58,58 +57,24 @@ func TestParseCmdStringWithParams(t *testing.T) {
 	}
 
 	testCases := []tests{
-		{in:"start", out:testout{path:"start", args:nil}},
-		{in:"start -name hello", out:testout{path:"start", args:[]string{"-name", "hello"}}},
+		{in: "start", out: testout{path: "start", args: nil}},
+		{in: "start -name hello", out: testout{path: "start", args: []string{"-name", "hello"}}},
 		// not support ' quote
-		{in:"start -name 'hello", out:testout{path:"start", args:[]string{"-name", "'hello"}}},
-		{in:"start -name \\'hello", out:testout{path:"start", args:[]string{"-name", "'hello"}}},
-		{in:"start -name \\\"hello", out:testout{path:"start", args:[]string{"-name", "\"hello"}}},
-		{in:"s\\ tart -name \\\"hello", out:testout{path:"s tart", args:[]string{"-name", "\"hello"}}},
-		{in:"start -name \"hello\"", out:testout{path:"start", args:[]string{"-name", "hello"}}},
-		{in:"start -name \"hello world\"", out:testout{path:"start", args:[]string{"-name", "hello world"}}},
+		{in: "start -name 'hello", out: testout{path: "start", args: []string{"-name", "'hello"}}},
+		{in: "start -name \\'hello", out: testout{path: "start", args: []string{"-name", "'hello"}}},
+		{in: "start -name \\\"hello", out: testout{path: "start", args: []string{"-name", "\"hello"}}},
+		{in: "s\\ tart -name \\\"hello", out: testout{path: "s tart", args: []string{"-name", "\"hello"}}},
+		{in: "start -name \"hello\"", out: testout{path: "start", args: []string{"-name", "hello"}}},
+		{in: "start -name \"hello world\"", out: testout{path: "start", args: []string{"-name", "hello world"}}},
 	}
 
 	for _, testCase := range testCases {
 		path, args, err := ParseCmdStringWithParams(testCase.in)
 
-		if err!=nil || path != testCase.out.path || !reflect.DeepEqual(args, testCase.out.args) {
-			t.Error("Test failed for:", testCase,"path:", path, "result:", args)
-		}else{
-			t.Log("Test success for:", testCase,"path:", path, "result:", args)
-		}
-	}
-}
-
-
-func TestStringSlice(t *testing.T) {
-	str := "TestParseCmdTestStringWithTestParams"
-
-	var iter int
-	find := "Test"
-	//panic: runtime error: slice bounds out of range [recovered]
-	//t.Log(find[5:])
-	t.Log("String", str, "Slice based AT 5:", str[5:])
-
-	start := 0;
-	for {
-		chunk := str[start:]
-		iter = strings.Index(chunk, find)
-		if iter == -1 {
-			t.Log("Find no", find, "in:", chunk)
-			break
+		if err != nil || path != testCase.out.path || !reflect.DeepEqual(args, testCase.out.args) {
+			t.Error("Test failed for:", testCase, "path:", path, "result:", args)
 		} else {
-			t.Log("Find", find, "in:", chunk, "At", iter)
-			//iter是基于当前start的
-			start = start + iter + len(find)
-			if start > len(str) {
-				t.Log("Final break At:", start)
-				break
-			}
-
-			t.Log("Next round start At:", start)
+			t.Log("Test success for:", testCase, "path:", path, "result:", args)
 		}
 	}
-
-	str="fdsafda "
-	t.Log("String trim of `fdsafda `:", strings.Trim(str, " fa"))
 }
