@@ -3,16 +3,17 @@ package cluster
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/coreos/etcd/client"
 
-	"strconv"
-	"strings"
 	"zooinit/cluster/etcd"
 	"zooinit/config"
+	"zooinit/utility"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 	CLUSTER_BOOTSTRAP_TIMEOUT = 5 * time.Minute
 
 	// 1. consul/config/size qurorum大小
-	// 2. consul/selection/ 候选人选举目录，CreateInOrder
+	// 2. consul/election/ 候选人选举目录，CreateInOrder
 	// 3. consul/members/ 正式集群中的候选人
 	CLUSTER_CONFIG_DIR    = "/config"
 	CLUSTER_SELECTION_DIR = "/election"
@@ -33,6 +34,15 @@ var (
 	// Discovery service latest endpoints
 	lastestEndpoints  []string
 	endpointsSyncLock sync.Mutex
+
+	// Discovery service latest result members of election
+	membersElected  []string
+	membersSyncLock sync.Mutex
+
+	// Election qurorum size
+	qurorumSize       int64
+	qurorumWatchIndex uint64
+	qurorumSyncLock   sync.Mutex
 )
 
 func Bootstrap(c *cli.Context) {
@@ -61,10 +71,16 @@ func Bootstrap(c *cli.Context) {
 	initializeClusterDiscoveryInfo()
 
 	// loop wait qurorum size of nodes is registed
+	loopUntilQurorumIsReached()
 
 	// start up local node
+	bootstrapLocalClusterMember()
 
 	// loop wait cluster is up
+	loopUntilClusterIsUp()
+
+	// watch and check cluster health [watchdog]
+	watchDogRunning()
 }
 
 // Fetch bootstrap env instance
@@ -74,10 +90,7 @@ func GetEnvInfo() *envInfo {
 
 // init cluster bootstrap info
 func initializeClusterDiscoveryInfo() {
-	kvApi, err := etcd.NewApiKeys(lastestEndpoints)
-	if err != nil {
-		env.logger.Fatalln("Etcd.NewApiKeys() found error:", err)
-	}
+	kvApi := getClientKeysApi()
 
 	// Set qurorum size
 	resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: env.timeout, PrevExist: client.PrevNoExist})
@@ -115,10 +128,8 @@ func initializeClusterDiscoveryInfo() {
 }
 
 func UpdateLatestEndpoints() {
-	memApi, err := etcd.NewApiMember(strings.Split(env.discoveryTarget, ","))
-	if err != nil {
-		env.logger.Fatalln("Etcd.NewApiMember() found error:", err)
-	}
+	memApi := getClientMembersApi(strings.Split(env.discoveryTarget, ","))
+
 	tmpEndpoints, err := memApi.GetInitialClusterEndpoints()
 	if err != nil {
 		env.logger.Fatalln("Etcd.GetInitialClusterEndpoints() found error:", err)
@@ -129,4 +140,131 @@ func UpdateLatestEndpoints() {
 	endpointsSyncLock.Lock()
 	defer endpointsSyncLock.Unlock()
 	lastestEndpoints = tmpEndpoints
+}
+
+func loopUntilQurorumIsReached() {
+	kvApi := getClientKeysApi()
+
+	var latestIndex uint64
+	// GetLatestElectionMember
+	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
+	if err != nil {
+		env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest ModifiedIndex error:", err)
+
+	} else {
+		latestIndex = resp.Node.ModifiedIndex - 1 // latestIndex-1 for check unitial change
+	}
+
+	// GetConfigSize
+	getQurorumSize()
+	// Change concurrently
+	go watchQurorumSize()
+
+	// loop until qurorum size is reached
+	for {
+		wather := kvApi.Conn().Watcher(env.discoveryPath+CLUSTER_SELECTION_DIR, &client.WatcherOptions{Recursive: true, AfterIndex: latestIndex})
+		resp, err = wather.Next(etcd.Context())
+		if err != nil {
+			env.logger.Fatalln("Etcd.Watcher() watch "+env.discoveryPath+CLUSTER_SELECTION_DIR+" error:", err)
+
+		} else {
+			latestIndex = resp.Node.ModifiedIndex
+			env.logger.Println("Get last ModifiedIndex of watch:", latestIndex)
+		}
+
+		resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
+		if err != nil {
+			env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest election nodes error:", err)
+
+		} else {
+			var nodeList []string
+			for _, node := range resp.Node.Nodes {
+				if node.Dir || !etcd.CheckInOrderKeyFormat(node.Key) {
+					continue
+				}
+				nodeList = append(nodeList, node.Value)
+			}
+
+			nodeList = utility.RemoveDuplicateInOrder(nodeList)
+			env.logger.Println("Get election qurorum size, after remove duplicates:", len(nodeList), "members:", nodeList)
+
+			if int64(len(nodeList)) >= qurorumSize {
+				env.logger.Println("Get election qurorum finished:", nodeList[:qurorumSize])
+
+				membersSyncLock.Lock()
+				membersElected = nodeList[:qurorumSize]
+				membersSyncLock.Unlock()
+
+				break
+			}
+		}
+	}
+}
+
+func bootstrapLocalClusterMember() {
+
+}
+
+func loopUntilClusterIsUp() {
+
+}
+
+func watchDogRunning() {
+
+}
+
+// Need to watch config size
+// TODO Lately need to trigger reconfig cluster size
+func watchQurorumSize() {
+	kvApi := getClientKeysApi()
+
+	for {
+		watch := kvApi.Conn().Watcher(env.discoveryPath+CLUSTER_CONFIG_DIR+"/size", &client.WatcherOptions{AfterIndex: qurorumWatchIndex})
+		resp, err := watch.Next(etcd.Context())
+		if err != nil {
+			env.logger.Fatalln("Etcd.Api() watch /config/size error:", err)
+		} else {
+			env.logger.Println("Etcd.Api() watch /config/size found change:", resp)
+
+			getQurorumSize()
+		}
+	}
+}
+
+func getQurorumSize() {
+	kvApi := getClientKeysApi()
+	// get config size
+	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR+"/size", &client.GetOptions{})
+	if err != nil {
+		env.logger.Fatalln("Etcd.Api() get /config/size error:", err)
+	} else {
+		env.logger.Println("Etcd.Api() get /config/size ok, Qurorum size:", resp.Node.Value)
+		tmp, err := strconv.ParseInt(resp.Node.Value, 10, 64)
+		if err != nil {
+			env.logger.Fatalln("Error: strconv.ParseInt(/config/size) error:", err)
+		}
+
+		qurorumSyncLock.Lock()
+		qurorumSize = tmp
+		qurorumWatchIndex = resp.Node.ModifiedIndex
+		qurorumSyncLock.Unlock()
+	}
+}
+
+func getClientKeysApi() *etcd.ApiKeys {
+	kvApi, err := etcd.NewApiKeys(lastestEndpoints)
+	if err != nil {
+		env.logger.Fatalln("Etcd.NewApiKeys() found error:", err)
+	}
+
+	return kvApi
+}
+
+func getClientMembersApi(endpoints []string) *etcd.ApiMembers {
+	memApi, err := etcd.NewApiMember(endpoints)
+	if err != nil {
+		env.logger.Fatalln("Etcd.NewApiMember() found error:", err)
+	}
+
+	return memApi
 }
