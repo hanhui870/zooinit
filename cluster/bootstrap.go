@@ -23,7 +23,7 @@ const (
 	// 2. consul/selection/ 候选人选举目录，CreateInOrder
 	// 3. consul/members/ 正式集群中的候选人
 	CLUSTER_CONFIG_DIR    = "/config"
-	CLUSTER_SELECTION_DIR = "/selection"
+	CLUSTER_SELECTION_DIR = "/election"
 	CLUSTER_MEMBER_DIR    = "/members"
 )
 
