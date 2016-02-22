@@ -5,6 +5,9 @@
 1. 分布式服务的服务发现问题
 1. 集群启动支持脚本调用和变量自动复制,基于Go语言模板解析
 
+
+    Note: software configuration watch and reoconfigure please use consul-template project
+
 ## Testing
 
     go test zooinit/log zooinit/discovery zooinit/config -v
