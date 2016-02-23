@@ -21,19 +21,19 @@ def main():
     if (service == None):
         printf("ENV ZOOINIT_CLUSTER_BACKEND is None, please check zooinit")
     else:
-        printf("Receive ZOOINIT_CLUSTER_BACKEND variable:", service)
+        printf("Receive ZOOINIT_CLUSTER_BACKEND variable: " + service)
 
     iplist = os.getenv("ZOOINIT_SERVER_IP_LIST")
     if (iplist == None):
         printf("ENV ZOOINIT_SERVER_IP_LIST is None, please check zooinit")
     else:
-        printf("Receive ZOOINIT_SERVER_IP_LIST variable:", iplist)
+        printf("Receive ZOOINIT_SERVER_IP_LIST variable: " + iplist)
 
     localip = os.getenv("ZOOINIT_LOCAL_IP")
     if (localip == None):
         printf("ENV ZOOINIT_LOCAL_IP is None, please check zooinit")
     else:
-        printf("Receive ZOOINIT_LOCAL_IP variable:", localip)
+        printf("Receive ZOOINIT_LOCAL_IP variable: " + localip)
 
     info = Info(service, iplist, localip)
     start = importlib.import_module("cluster.consul.onStart")

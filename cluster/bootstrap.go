@@ -211,7 +211,7 @@ func bootstrapLocalClusterMember() {
 
 	callCmd := exec.Command("python3", "script/main.py")
 	loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
-	loggerIOAdapter.SetPrefix("BootstrapLocalClusterMember: ")
+	loggerIOAdapter.SetPrefix("BootClusterMember: ")
 	callCmd.Stdout = loggerIOAdapter
 	callCmd.Stderr = loggerIOAdapter
 

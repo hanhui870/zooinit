@@ -7,6 +7,7 @@ def printf(*args, **kwargs):
         print(var)
     for var in kwargs:
         print(var + "=" + str(kwargs[var]))
+
     # flush output will log in a new line.
     sys.stdout.flush()
 
