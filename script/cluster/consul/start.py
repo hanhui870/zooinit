@@ -1,6 +1,10 @@
 import subprocess
+import sys
+import os
 
-out_bytes = subprocess.check_output(['ls','-a'])
-out_text = out_bytes.decode('utf-8')
 
-print(out_text)
+def run():
+    print("Zoopy started to run...")
+    iplist = os.getenv("ZOOINIT_SERVER_IP_LIST")
+    if (iplist == None):
+        print("ENV ZOOINIT_SERVER_IP_LIST is None, please check zooinit")
