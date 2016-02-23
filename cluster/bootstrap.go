@@ -3,6 +3,7 @@ package cluster
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -13,6 +14,7 @@ import (
 
 	"zooinit/cluster/etcd"
 	"zooinit/config"
+	"zooinit/log"
 	"zooinit/utility"
 )
 
@@ -207,6 +209,24 @@ func bootstrapLocalClusterMember() {
 		env.logger.Fatalln("BootstrapLocalClusterMember error, localip is not in the elected list.")
 	}
 
+	callCmd := exec.Command("python3", "script/main.py")
+	loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
+	loggerIOAdapter.SetPrefix("BootstrapLocalClusterMember: ")
+	callCmd.Stdout = loggerIOAdapter
+	callCmd.Stderr = loggerIOAdapter
+
+	// Transfer variable to python
+	callCmd.Env = []string{"ZOOINIT_CLUSTER_BACKEND=" + env.service}
+	callCmd.Env = append(callCmd.Env, "ZOOINIT_SERVER_IP_LIST="+strings.Join(membersElected, ","))
+	callCmd.Env = append(callCmd.Env, "ZOOINIT_LOCAL_IP="+env.localIP.String())
+
+	err := callCmd.Start()
+	defer callCmd.Process.Kill()
+	if err != nil {
+		env.logger.Println("callCmd.Start() error found:", err)
+	}
+
+	callCmd.Wait()
 }
 
 func loopUntilClusterIsUp() {
