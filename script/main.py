@@ -1,4 +1,5 @@
-#! /bin/env python
+#! /usr/bin/env python3
+# not work #! env python
 
 import sys
 import os
