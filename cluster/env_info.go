@@ -3,6 +3,8 @@ package cluster
 import (
 	"log"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/go-ini/ini"
@@ -82,6 +84,10 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
 	//flush last log info
 	defer obj.logger.Sync()
+
+	//register signal watcher
+	obj.registerSignalWatch()
+
 	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
 
 	obj.discoveryMethod = sec.Key("discover.method").String()
@@ -188,4 +194,22 @@ func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
 	}
 
 	return e.logger
+}
+
+func (e *envInfo) registerSignalWatch() {
+	if e == nil {
+		return
+	}
+
+	sg := utility.NewSignalCatcher()
+	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {
+		e.logger.Println("Receive signal: " + sig.String() + " App will terminate, bye.")
+		e.logger.Sync()
+	}, nil)
+
+	sg.SetDefault(call)
+	sg.EnableExit()
+	e.logger.Println("Init System SignalWatcher, catch list:", strings.Join(sg.GetSignalStringList(), ", "))
+
+	sg.RegisterAndServe()
 }

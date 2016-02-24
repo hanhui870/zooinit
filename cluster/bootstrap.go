@@ -48,9 +48,6 @@ var (
 )
 
 func Bootstrap(c *cli.Context) {
-	//flush last log info
-	defer env.logger.Sync()
-
 	fname := config.GetConfigFileName(c.String("config"))
 	iniobj := config.GetConfigInstance(fname)
 
@@ -61,6 +58,9 @@ func Bootstrap(c *cli.Context) {
 
 	cluster := c.Args()[0]
 	env = NewEnvInfo(iniobj, cluster)
+
+	//flush last log info
+	defer env.logger.Sync()
 
 	env.logger.Println("Logger path:", env.logPath)
 	env.logger.Println("Timeout:", env.timeout.String())

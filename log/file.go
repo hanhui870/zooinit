@@ -14,7 +14,7 @@ import (
 
 // 20160223 Logger dispear without save if process terminate. SOLV: IDE cache problem, use shell term can fetch synchronous.
 //		Data may loss if process terminate, in every func call need to call defer logger.Sync()
-// TODO because wrapper in log.Logger, there is problem to call Sync()
+// because wrapper in log.Logger, there is problem to call Sync(), use signal catcher solve this.
 // 有缓存的FileLog适配器
 type FileLog struct {
 	file *os.File
