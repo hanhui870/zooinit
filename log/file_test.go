@@ -1,13 +1,13 @@
 package log
 
 import (
-	"testing"
-	"os"
-	"zooinit/config"
-	"path/filepath"
-	"time"
 	"bytes"
+	"os"
+	"path/filepath"
 	"strconv"
+	"testing"
+	"time"
+	"zooinit/config"
 )
 
 func TestFileLoggerNormal(t *testing.T) {
@@ -22,7 +22,7 @@ func TestFileLoggerNormal(t *testing.T) {
 	logPath := ini.Section("production").Key("log.path").String()
 	t.Log("Log path:", logPath)
 
-	date := time.Now();
+	date := time.Now()
 	t.Log("DateTime Now:", date.Format(time.RFC3339))
 	//这个日期是固定的
 	t.Log("Date Now:", date.Format("2006-01-02"))
@@ -46,7 +46,7 @@ func TestFileLoggerNormal(t *testing.T) {
 	t.Log("log buffer2:", log.buf.String())
 
 	//need time
-	//testLookWrite(t, log)
+	testLookWrite(t, log)
 }
 
 func echo(t *testing.T, args ...string) {
@@ -62,7 +62,7 @@ func testLookWrite(t *testing.T, log *FileLog) {
 	go func() {
 		for i := 0; i < 2; i++ {
 			log.Write(bytes.NewBufferString("Test testLookWrite" + strconv.Itoa(i) + "\n").Bytes())
-			time.Sleep(5*time.Second)
+			time.Sleep(5 * time.Second)
 		}
 
 	}()
@@ -71,6 +71,6 @@ func testLookWrite(t *testing.T, log *FileLog) {
 		//receive write signal: 1
 		//receive write signal: 1
 		//receive write signal: 1
-		time.Sleep(100*time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }

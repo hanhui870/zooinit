@@ -7,7 +7,6 @@ import (
 	"os"
 )
 
-// TODO 20160223 Logger dispear without save if process terminate
 type LoggerIOAdapter struct {
 	logger *log.Logger
 	prefix string
