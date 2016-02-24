@@ -28,20 +28,31 @@ func main() {
 	}
 
 	sg := utility.NewSignalCatcher()
-	call := utility.NewSignalCallback(clean, "this is test cleanup")
 	fmt.Println("catch list init:", strings.Join(sg.GetSignalStringList(), ", "))
 
-	sg.SetDefault(call)
-	fmt.Println("catch list after SetDefault:", strings.Join(sg.GetSignalStringList(), ", "))
+	//call := utility.NewSignalCallback(clean, "this is test cleanup")
+	//sg.SetDefault(call)
 
-	usercall := utility.NewSignalCallback(cleanup, "this is test cleanup")
+	usercall := utility.NewSignalCallback(cleanup, "this is user signal, and will exit...")
 	sg.SetHandle([]os.Signal{syscall.SIGUSR1, syscall.SIGUSR2}, usercall)
 
 	fmt.Println("catch list:", strings.Join(sg.GetSignalStringList(), ", "))
 
-	fmt.Println("You can send signal in 10s..")
+	tw := 100 * time.Second
+	fmt.Println("You can send signal in ", tw)
+	//support exit need to exit kill -30 pid
+	sg.EnableExit()
 	sg.RegisterAndServe()
 
-	time.Sleep(10 * time.Second)
+	// Second signal book
+	sg2 := utility.NewSignalCatcher()
+	call2 := utility.NewSignalCallback(clean, "this is test cleanup call2")
+	fmt.Println("catch list init2:", strings.Join(sg2.GetSignalStringList(), ", "))
+
+	sg2.SetDefault(call2)
+	fmt.Println("catch list after SetDefault:", strings.Join(sg2.GetSignalStringList(), ", "))
+	sg2.RegisterAndServe()
+
+	time.Sleep(tw)
 	fmt.Println("Wait completed.")
 }
