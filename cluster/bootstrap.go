@@ -234,6 +234,8 @@ func bootstrapLocalClusterMember() {
 	callCmd.Env = []string{"ZOOINIT_CLUSTER_BACKEND=" + env.service}
 	callCmd.Env = append(callCmd.Env, "ZOOINIT_SERVER_IP_LIST="+strings.Join(membersElected, ","))
 	callCmd.Env = append(callCmd.Env, "ZOOINIT_LOCAL_IP="+env.localIP.String())
+	// Master first one
+	callCmd.Env = append(callCmd.Env, "ZOOINIT_MASTER_IP="+membersElected[0])
 
 	err := callCmd.Start()
 	defer callCmd.Process.Kill()
