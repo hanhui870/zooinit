@@ -20,6 +20,8 @@ const (
 )
 
 func BootstrapEtcd(env *envInfo) error {
+	// flush last log info
+	defer env.logger.Sync()
 	env.logger.Println("Starting to boot Etcd...")
 
 	// Internal discovery service
@@ -190,6 +192,9 @@ func BootstrapEtcd(env *envInfo) error {
 //request until sucess
 func LoopTimeoutRequest(timeout time.Duration, env *envInfo, routine func() (result bool, err error)) (result bool, err error) {
 	var charlist []byte
+
+	//flush last log info
+	defer env.logger.Sync()
 
 	result = false
 	start := time.Now()

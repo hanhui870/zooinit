@@ -48,6 +48,9 @@ var (
 )
 
 func Bootstrap(c *cli.Context) {
+	//flush last log info
+	defer env.logger.Sync()
+
 	fname := config.GetConfigFileName(c.String("config"))
 	iniobj := config.GetConfigInstance(fname)
 
@@ -92,6 +95,9 @@ func GetEnvInfo() *envInfo {
 
 // init cluster bootstrap info
 func initializeClusterDiscoveryInfo() {
+	//flush last log info
+	defer env.logger.Sync()
+
 	kvApi := getClientKeysApi()
 
 	// Set qurorum size
@@ -130,6 +136,9 @@ func initializeClusterDiscoveryInfo() {
 }
 
 func UpdateLatestEndpoints() {
+	//flush last log info
+	defer env.logger.Sync()
+
 	memApi := getClientMembersApi(strings.Split(env.discoveryTarget, ","))
 
 	tmpEndpoints, err := memApi.GetInitialClusterEndpoints()
@@ -145,6 +154,9 @@ func UpdateLatestEndpoints() {
 }
 
 func loopUntilQurorumIsReached() {
+	//flush last log info
+	defer env.logger.Sync()
+
 	kvApi := getClientKeysApi()
 
 	var latestIndex uint64
@@ -203,6 +215,9 @@ func loopUntilQurorumIsReached() {
 }
 
 func bootstrapLocalClusterMember() {
+	//flush last log info
+	defer env.logger.Sync()
+
 	env.logger.Println("Started to boot Local cluster member, local ip:", env.localIP.String())
 
 	if !utility.InSlice(membersElected, env.localIP.String()) {
@@ -240,6 +255,9 @@ func watchDogRunning() {
 // Need to watch config size
 // TODO Lately need to trigger reconfig cluster size
 func watchQurorumSize() {
+	//flush last log info
+	defer env.logger.Sync()
+
 	kvApi := getClientKeysApi()
 
 	for {
@@ -256,6 +274,9 @@ func watchQurorumSize() {
 }
 
 func getQurorumSize() {
+	//flush last log info
+	defer env.logger.Sync()
+
 	kvApi := getClientKeysApi()
 	// get config size
 	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR+"/size", &client.GetOptions{})
@@ -276,6 +297,9 @@ func getQurorumSize() {
 }
 
 func getClientKeysApi() *etcd.ApiKeys {
+	//flush last log info
+	defer env.logger.Sync()
+
 	kvApi, err := etcd.NewApiKeys(lastestEndpoints)
 	if err != nil {
 		env.logger.Fatalln("Etcd.NewApiKeys() found error:", err)
@@ -285,6 +309,9 @@ func getClientKeysApi() *etcd.ApiKeys {
 }
 
 func getClientMembersApi(endpoints []string) *etcd.ApiMembers {
+	//flush last log info
+	defer env.logger.Sync()
+
 	memApi, err := etcd.NewApiMember(endpoints)
 	if err != nil {
 		env.logger.Fatalln("Etcd.NewApiMember() found error:", err)

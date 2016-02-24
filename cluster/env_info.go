@@ -32,7 +32,7 @@ type envInfo struct {
 	logPath string
 
 	// Logger instance for service
-	logger *log.Logger
+	logger *loglocal.BufferedFileLogger
 
 	// localIP for boot
 	localIP net.IP
@@ -80,6 +80,8 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 		log.Fatalln("Config of cluster.backend is empty.")
 	}
 	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	//flush last log info
+	defer obj.logger.Sync()
 	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
 
 	obj.discoveryMethod = sec.Key("discover.method").String()
@@ -180,7 +182,7 @@ func (e *envInfo) Service() string {
 	return e.service
 }
 
-func (e *envInfo) Logger() *log.Logger {
+func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
 	if e == nil {
 		return nil
 	}

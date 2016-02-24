@@ -25,9 +25,9 @@ type FileLog struct {
 	max int
 	// 超出多少时间刷到磁盘
 	ttl time.Duration
-	//channel for background worker sync
+	// channel for background worker sync
 	syncChan chan int
-	//排它锁
+	// 排它锁
 	mu sync.Mutex
 }
 
@@ -246,7 +246,7 @@ func (f *FileLog) backgroundSaveWorker() error {
 
 		case writeSignal := <-timeChan:
 			if writeSignal == WRITE_SIGNAL {
-				fmt.Println("receive write signal:", writeSignal)
+				//fmt.Println("receive write signal:", writeSignal)
 				_, err := f.Sync()
 				if err != nil {
 					panic(err)

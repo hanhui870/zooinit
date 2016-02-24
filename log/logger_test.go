@@ -1,11 +1,11 @@
 package log
 
 import (
-	"testing"
-	"log"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"testing"
 	"zooinit/config"
 )
 
@@ -30,7 +30,6 @@ func TestMuiltWriterLogger(t *testing.T) {
 	defer f.Close()
 
 	writer := io.MultiWriter(os.Stdout, f)
-	logger := log.New(writer, "", log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
+	logger := log.New(writer, "", DEFAULT_LOGGER_FLAGS)
 	logger.Println("hello world from TestMuiltWriterLogger")
 }
-

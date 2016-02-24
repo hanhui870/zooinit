@@ -49,7 +49,7 @@ type envInfo struct {
 	logPath string
 
 	// Logger instance for service
-	logger *log.Logger
+	logger *loglocal.BufferedFileLogger
 
 	// boot command
 	cmd        string
@@ -79,6 +79,8 @@ func NewEnvInfo(iniobj *ini.File) *envInfo {
 	}
 
 	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	//flush last log info
+	defer obj.logger.Sync()
 	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
 
 	discovery := sec.Key("discovery").String()
@@ -202,7 +204,7 @@ func (e *envInfo) Service() string {
 	return e.service
 }
 
-func (e *envInfo) Logger() *log.Logger {
+func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
 	if e == nil {
 		return nil
 	}
