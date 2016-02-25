@@ -5,7 +5,7 @@ import sys
 import os
 import importlib
 import sys
-from cluster.utils import printf
+from cluster import utils
 from cluster.info import Info
 from cluster import signalhandler
 
@@ -18,42 +18,50 @@ from cluster import signalhandler
 
 # sys.path include pwd
 def main():
-    printf("Zoopy started to run...")
+    utils.initUnbufferedStdoutIO()
+    print("Zoopy started to run...")
 
-    printf("Regist python signal handler...")
+    print("Regist python signal handler...")
     signalhandler.registerExitSignal()
 
     service = os.getenv("ZOOINIT_CLUSTER_BACKEND")
     if (service == None):
-        printf("ENV ZOOINIT_CLUSTER_BACKEND is None, please check zooinit")
+        print("ENV ZOOINIT_CLUSTER_BACKEND is None, please check zooinit")
         sys.exit(1)
     else:
-        printf("Receive ZOOINIT_CLUSTER_BACKEND variable: " + service)
+        print("Receive ZOOINIT_CLUSTER_BACKEND: " + service)
 
     iplist = os.getenv("ZOOINIT_SERVER_IP_LIST")
     if (iplist == None):
-        printf("ENV ZOOINIT_SERVER_IP_LIST is None, please check zooinit")
+        print("ENV ZOOINIT_SERVER_IP_LIST is None, please check zooinit")
         sys.exit(1)
     else:
-        printf("Receive ZOOINIT_SERVER_IP_LIST variable: " + iplist)
+        print("Receive ZOOINIT_SERVER_IP_LIST: " + iplist)
 
     localip = os.getenv("ZOOINIT_LOCAL_IP")
     if (localip == None):
-        printf("ENV ZOOINIT_LOCAL_IP is None, please check zooinit")
+        print("ENV ZOOINIT_LOCAL_IP is None, please check zooinit")
         sys.exit(1)
     else:
-        printf("Receive ZOOINIT_LOCAL_IP variable: " + localip)
+        print("Receive ZOOINIT_LOCAL_IP: " + localip)
 
     masterip = os.getenv("ZOOINIT_MASTER_IP")
     if (masterip == None):
-        printf("ENV ZOOINIT_MASTER_IP is None, please check zooinit")
+        print("ENV ZOOINIT_MASTER_IP is None, please check zooinit")
         sys.exit(1)
     else:
-        printf("Receive ZOOINIT_MASTER_IP variable: " + masterip)
+        print("Receive ZOOINIT_MASTER_IP: " + masterip)
 
-    info = Info(service, iplist, localip, masterip)
+    qurorum = os.getenv("ZOOINIT_QURORUM")
+    if (qurorum == None):
+        print("ENV ZOOINIT_QURORUM is None, please check zooinit")
+        sys.exit(1)
+    else:
+        print("Receive ZOOINIT_QURORUM: " + qurorum)
+
+    info = Info(service, iplist, localip, masterip, qurorum)
     if (not info.CheckLocalIp()):
-        printf("ZOOINIT_LOCAL_IP is not in the list ZOOINIT_SERVER_IP_LIST, give up.")
+        print("ZOOINIT_LOCAL_IP is not in the list ZOOINIT_SERVER_IP_LIST, give up.")
 
     start = importlib.import_module("cluster.consul.onStart")
     start.run(info)

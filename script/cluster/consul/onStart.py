@@ -1,23 +1,33 @@
 import subprocess
 import sys
-import os
-
-from cluster.utils import printf
+import io
 from cluster.info import Info
 
 
 def run(info):
     if (not isinstance(info, Info)):
-        printf(__name__ + "::run() info is not instance Info, please check")
+        print(__name__ + "::run() info is not instance Info, please check")
 
     try:
         # fail, no quoted: consul agent -server -data-dir="/tmp/consul" -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108
-        output = subprocess.check_output([
-                                             "consul agent -server -data-dir=/tmp/consul -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108"],
-                                         stderr=subprocess.STDOUT, shell=True)
-        printf(output)
+        # If passing a single string, either shell must be True (see below) or else the string must simply name the program to be executed without specifying any arguments.
+        proc = subprocess.Popen(["consul", "agent", "-server",
+                                 "-data-dir=/tmp/consul",
+                                 "-bootstrap-expect", info.Qurorum,
+                                 "-bind=" + info.Localip,
+                                 "-client=" + info.Localip], stdout=subprocess.PIPE)
+
+        for line in iter(proc.stdout.readline, ''):
+            print(line.strip())
+
+            # No need.
+            # proc.wait()
+
+    except subprocess.CalledProcessError as err:
+        print("Found CalledProcessError:", err, err.output)
     except Exception as err:
-        printf("Found error:", err)
+        print("Found error:", err)
+
 
 # ImportError: No module named cluster.utils
 # see readme.md set PYTHONPATH
