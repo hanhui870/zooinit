@@ -1,8 +1,8 @@
 package utility
 
 import (
-	"net"
 	"errors"
+	"net"
 	"strings"
 )
 
@@ -41,7 +41,7 @@ func GetIpAddress(eth string) (map[string][]net.IP, error) {
 }
 
 // Does the machine owns the ip
-func HasIpAddress(findip string) (bool) {
+func HasIpAddress(findip string) bool {
 	iplist, err := GetIpAddress("")
 	if err != nil {
 		panic(err)
@@ -59,7 +59,7 @@ func HasIpAddress(findip string) (bool) {
 }
 
 // Find the mask of the IP Adress
-func MaskOFIpAddress(findip string) (net.IPMask) {
+func MaskOFIpAddress(findip string) net.IPMask {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		panic(err)
@@ -138,7 +138,7 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 	//escapeChar := byte(0) //null \t \n need special process
 
 	// Func for process escaped things.
-	doneEscapeFunc := func(str *string, start, end int) (string) {
+	doneEscapeFunc := func(str *string, start, end int) string {
 		// Can safely use escapePos, escapeChar
 		strNew := (*str)[start:end]
 
@@ -146,9 +146,9 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 			if escapePos > length || escapePos < start {
 				panic("Never can happen. escapePos > length || escapePos < start")
 
-			}else {
+			} else {
 				rEscapePos := escapePos - start
-				strNew = strNew[:rEscapePos] + strNew[rEscapePos + 1:]
+				strNew = strNew[:rEscapePos] + strNew[rEscapePos+1:]
 
 			}
 
@@ -165,9 +165,9 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 
 			if blockNow == BLOCK_UNDEFINED {
 				blockStart = i
-				if i==0 {
+				if i == 0 {
 					blockNow = BLOCK_CMD
-				}else{
+				} else {
 					blockNow = BLOCK_ARG
 				}
 			}
@@ -188,35 +188,35 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 			blockStart = 0
 			continue
 
-		}else if strings.ContainsAny(delimeter, string(cmd[i])) { //end of slice[start:end] no need minus 1
+		} else if strings.ContainsAny(delimeter, string(cmd[i])) { //end of slice[start:end] no need minus 1
 			if blockNow == BLOCK_UNDEFINED {
 				blockStart = i + 1
 				blockNow = BLOCK_ARG
 
-			}else if blockNow == BLOCK_ARG {
+			} else if blockNow == BLOCK_ARG {
 				args = append(args, doneEscapeFunc(&cmd, blockStart, i))
 				//reset
 				blockStart = -1
 				blockNow = BLOCK_UNDEFINED
 
-			}else if blockNow == BLOCK_CMD {
+			} else if blockNow == BLOCK_CMD {
 				path = doneEscapeFunc(&cmd, blockStart, i)
 				//reset
 				blockStart = -1
 				blockNow = BLOCK_UNDEFINED
 
-			}else if blockNow == BLOCK_QUOTED {
+			} else if blockNow == BLOCK_QUOTED {
 				//ignore blank in the text
 			}
 
 			continue
 
-		}else if strings.ContainsAny(quoted, string(cmd[i])) {
+		} else if strings.ContainsAny(quoted, string(cmd[i])) {
 			if blockNow == BLOCK_UNDEFINED {
 				blockStart = i + 1
 				blockNow = BLOCK_QUOTED
 
-			}else if blockNow == BLOCK_QUOTED {
+			} else if blockNow == BLOCK_QUOTED {
 				if blockStart == -1 {
 					return "", nil, errors.New("Run time error, blockStart")
 				}
@@ -226,35 +226,35 @@ func ParseCmdStringWithParams(cmd string) (path string, args []string, err error
 				blockStart = -1
 				blockNow = BLOCK_UNDEFINED
 
-			}else if blockNow == BLOCK_CMD {
+			} else if blockNow == BLOCK_CMD {
 				return "", nil, errors.New("Command path should not start with Quoted string.")
 
-			}else if blockNow == BLOCK_ARG {
+			} else if blockNow == BLOCK_ARG {
 				if blockStart == i {
 					blockStart = i + 1
 					blockNow = BLOCK_QUOTED
-				}else {
-					return "", nil, errors.New("Command arg could not hash Quoted string in the middle.")
+				} else {
+					return "", nil, errors.New("Command arg could not has Quoted string in the middle.")
 				}
 			}
 
 			continue
 
-		}else if i == length - 1 {
+		} else if i == length-1 {
 			if blockNow == BLOCK_UNDEFINED {
 				return "", nil, errors.New("Reach end but block undefined.")
 
-			}else if blockNow == BLOCK_ARG {
+			} else if blockNow == BLOCK_ARG {
 				args = append(args, doneEscapeFunc(&cmd, blockStart, length))
 
-			}else if blockNow == BLOCK_CMD {
+			} else if blockNow == BLOCK_CMD {
 				path = doneEscapeFunc(&cmd, blockStart, length)
 
-			}else {
+			} else {
 				return "", nil, errors.New("BLOCK_QUOTED end exception.")
 			}
 
-		}else {
+		} else {
 			//char
 			if blockNow == BLOCK_UNDEFINED {
 				blockStart = i //this char

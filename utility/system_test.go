@@ -66,15 +66,18 @@ func TestParseCmdStringWithParams(t *testing.T) {
 		{in: "s\\ tart -name \\\"hello", out: testout{path: "s tart", args: []string{"-name", "\"hello"}}},
 		{in: "start -name \"hello\"", out: testout{path: "start", args: []string{"-name", "hello"}}},
 		{in: "start -name \"hello world\"", out: testout{path: "start", args: []string{"-name", "hello world"}}},
+		//201602.25: fail consul agent -server -data-dir=\"/tmp/consul\" -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108
+		{in: "consul agent -server -data-dir=/tmp/consul -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108",
+			out: testout{path: "consul", args: []string{"agent", "-server", "-data-dir=/tmp/consul", "-bootstrap-expect", "3", "-bind=192.168.4.108", "-client=192.168.4.108"}}},
 	}
 
 	for _, testCase := range testCases {
 		path, args, err := ParseCmdStringWithParams(testCase.in)
 
 		if err != nil || path != testCase.out.path || !reflect.DeepEqual(args, testCase.out.args) {
-			t.Error("Test failed for:", testCase, "path:", path, "result:", args)
+			t.Error("Test failed for:", testCase.in, "path:", path, "result:", args, "expect:", testCase.out.path, testCase.out.args)
 		} else {
-			t.Log("Test success for:", testCase, "path:", path, "result:", args)
+			t.Log("Test success for:", testCase.in, "path:", path, "result:", args)
 		}
 	}
 }
