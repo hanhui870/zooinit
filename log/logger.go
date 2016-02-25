@@ -2,6 +2,7 @@ package log
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -93,45 +94,54 @@ func (o *LoggerIOAdapter) Write(p []byte) (n int, err error) {
 
 // Arguments are handled in the manner of fmt.Printf.
 func (l *BufferedFileLogger) Printf(format string, v ...interface{}) {
-	l.logger.Printf(format, v...)
+	l.logger.Output(2, fmt.Sprintf(format, v...))
 }
 
 // Print calls l.Output to print to the logger.
 // Arguments are handled in the manner of fmt.Print.
-func (l *BufferedFileLogger) Print(v ...interface{}) { l.logger.Print(v...) }
+func (l *BufferedFileLogger) Print(v ...interface{}) { l.logger.Output(2, fmt.Sprint(v...)) }
 
 // Println calls l.Output to print to the logger.
 // Arguments are handled in the manner of fmt.Println.
-func (l *BufferedFileLogger) Println(v ...interface{}) { l.logger.Println(v...) }
+func (l *BufferedFileLogger) Println(v ...interface{}) { l.logger.Output(2, fmt.Sprintln(v...)) }
 
 // Fatal is equivalent to l.Print() followed by a call to os.Exit(1).
 func (l *BufferedFileLogger) Fatal(v ...interface{}) {
-	l.logger.Fatal(v...)
+	l.logger.Output(2, fmt.Sprint(v...))
+	os.Exit(1)
 }
 
 // Fatalf is equivalent to l.Printf() followed by a call to os.Exit(1).
 func (l *BufferedFileLogger) Fatalf(format string, v ...interface{}) {
-	l.logger.Fatalf(format, v...)
+	l.logger.Output(2, fmt.Sprintf(format, v...))
+	os.Exit(1)
 }
 
 // Fatalln is equivalent to l.Println() followed by a call to os.Exit(1).
 func (l *BufferedFileLogger) Fatalln(v ...interface{}) {
-	l.logger.Fatalln(v...)
+	l.logger.Output(2, fmt.Sprintln(v...))
+	os.Exit(1)
 }
 
 // Panic is equivalent to l.Print() followed by a call to panic().
 func (l *BufferedFileLogger) Panic(v ...interface{}) {
-	l.logger.Panic(v...)
+	s := fmt.Sprint(v...)
+	l.logger.Output(2, s)
+	panic(s)
 }
 
 // Panicf is equivalent to l.Printf() followed by a call to panic().
 func (l *BufferedFileLogger) Panicf(format string, v ...interface{}) {
-	l.logger.Panicf(format, v...)
+	s := fmt.Sprintf(format, v...)
+	l.logger.Output(2, s)
+	panic(s)
 }
 
 // Panicln is equivalent to l.Println() followed by a call to panic().
 func (l *BufferedFileLogger) Panicln(v ...interface{}) {
-	l.logger.Panicln(v...)
+	s := fmt.Sprintln(v...)
+	l.logger.Output(2, s)
+	panic(s)
 }
 
 // Flags returns the output flags for the logger.
