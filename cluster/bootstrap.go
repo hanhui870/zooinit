@@ -160,7 +160,7 @@ func loopUntilQurorumIsReached() {
 	kvApi := getClientKeysApi()
 
 	var latestIndex uint64
-	// GetLatestElectionMember
+	// GetLatestElectionMember index incrs from this one
 	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
 	if err != nil {
 		env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest ModifiedIndex error:", err)
