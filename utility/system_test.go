@@ -66,7 +66,7 @@ func TestParseCmdStringWithParams(t *testing.T) {
 		{in: "s\\ tart -name \\\"hello", out: testout{path: "s tart", args: []string{"-name", "\"hello"}}},
 		{in: "start -name \"hello\"", out: testout{path: "start", args: []string{"-name", "hello"}}},
 		{in: "start -name \"hello world\"", out: testout{path: "start", args: []string{"-name", "hello world"}}},
-		//201602.25: fail consul agent -server -data-dir=\"/tmp/consul\" -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108
+		//201602.25 fail and python: consul agent -server -data-dir=\"/tmp/consul\" -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108
 		{in: "consul agent -server -data-dir=/tmp/consul -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108",
 			out: testout{path: "consul", args: []string{"agent", "-server", "-data-dir=/tmp/consul", "-bootstrap-expect", "3", "-bind=192.168.4.108", "-client=192.168.4.108"}}},
 	}
