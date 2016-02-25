@@ -7,6 +7,7 @@ import importlib
 import sys
 from cluster.utils import printf
 from cluster.info import Info
+from cluster import signalhandler
 
 
 # former import
@@ -18,6 +19,9 @@ from cluster.info import Info
 # sys.path include pwd
 def main():
     printf("Zoopy started to run...")
+
+    printf("Regist python signal handler...")
+    signalhandler.registerExitSignal()
 
     service = os.getenv("ZOOINIT_CLUSTER_BACKEND")
     if (service == None):
