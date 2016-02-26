@@ -16,14 +16,14 @@ def run(info):
             "-bind=" + info.Localip,
             "-client=" + info.Localip]
 
+    # All need server mode to boot up.
+    args.append("-server")
+    args.append("-bootstrap-expect")
+    args.append(info.Qurorum)
+
     if (info.Localip != info.Masterip):  # slave mode
         args.append("-join=" + info.Masterip)
 
-    else:  # server mode
-        args.append("-server")
-
-        args.append("-bootstrap-expect")
-        args.append(info.Qurorum)
 
     runcmd.runWithStdoutSync(args)
 
