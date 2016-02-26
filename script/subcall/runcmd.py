@@ -6,14 +6,18 @@ def runWithStdoutSync(args):
     try:
         # fail, no quoted: consul agent -server -data-dir="/tmp/consul" -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108
         # If passing a single string, either shell must be True (see below) or else the string must simply name the program to be executed without specifying any arguments.
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+        # remove universal_newlines=True
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, bufsize=1)
 
         with proc.stdout as out:
             while True:
                 line = out.readline()
                 if line != "":
-                    print(line.strip())
+                    line = line.strip().decode("UTF-8")
+                    if line != "":
+                        print(line)
                 else:
+                    print("End of stdout, will break out loop...")
                     break
 
                     # No need.

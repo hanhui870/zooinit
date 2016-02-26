@@ -6,17 +6,24 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 type BufferedFileLogger struct {
 	logger *log.Logger
 	file   *FileLog
+
+	// Ignore Blank line
+	ignoreBlank bool
 }
 
 type LoggerIOAdapter struct {
 	logger *BufferedFileLogger
 	prefix string
 	suffix string
+
+	// Ignore Blank line
+	ignoreBlank bool
 }
 
 var (
@@ -24,7 +31,8 @@ var (
 )
 
 const (
-	DEFAULT_LOGGER_FLAGS = log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile
+	DEFAULT_LOGGER_FLAGS  = log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile
+	DEFALUT_BLANK_STRINGS = " \n\r"
 )
 
 func init() {
@@ -38,7 +46,7 @@ func Logger() *BufferedFileLogger {
 // Fetch a file based file service
 func GetBufferedLogger() *BufferedFileLogger {
 	logger := log.New(os.Stdout, "", DEFAULT_LOGGER_FLAGS)
-	return &BufferedFileLogger{logger: logger}
+	return &BufferedFileLogger{logger: logger, ignoreBlank: true}
 }
 
 // Fetch a file based file service
@@ -67,7 +75,7 @@ func GetConsoleFileMultiLogger(filename string) *BufferedFileLogger {
 
 // return new LoggerIOAdapter with Writer interface
 func NewLoggerIOAdapter(logger *BufferedFileLogger) *LoggerIOAdapter {
-	return &LoggerIOAdapter{logger: logger}
+	return &LoggerIOAdapter{logger: logger, ignoreBlank: true}
 }
 
 func (o *LoggerIOAdapter) SetPrefix(p string) {
@@ -87,45 +95,110 @@ func (o *LoggerIOAdapter) Write(p []byte) (n int, err error) {
 		return 0, errors.New("Object not exists.")
 	}
 
+	s := string(p)
+	if o.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		// Do not write actully
+		return len(p), nil
+	}
+
 	// Noneed add \n, caller process this
-	o.logger.Print(o.prefix + string(p) + o.suffix)
+	o.logger.Print(o.prefix + s + o.suffix)
 	return len(p), nil
+}
+
+// Ignore Blank line
+func (l *LoggerIOAdapter) IgnoreBlack() {
+	l.ignoreBlank = true
+}
+
+func (l *LoggerIOAdapter) IsIgnoreBlack() bool {
+	return l.ignoreBlank
+}
+
+// Ignore Blank line
+func (l *LoggerIOAdapter) LogBlack() {
+	l.ignoreBlank = false
+}
+
+// Ignore Blank line
+func (l *BufferedFileLogger) IgnoreBlack() {
+	l.ignoreBlank = true
+}
+
+func (l *BufferedFileLogger) IsIgnoreBlack() bool {
+	return l.ignoreBlank
+}
+
+// Ignore Blank line
+func (l *BufferedFileLogger) LogBlack() {
+	l.ignoreBlank = false
 }
 
 // Arguments are handled in the manner of fmt.Printf.
 func (l *BufferedFileLogger) Printf(format string, v ...interface{}) {
-	l.logger.Output(2, fmt.Sprintf(format, v...))
+	s := fmt.Sprintf(format, v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
+	l.logger.Output(2, s)
 }
 
 // Print calls l.Output to print to the logger.
 // Arguments are handled in the manner of fmt.Print.
-func (l *BufferedFileLogger) Print(v ...interface{}) { l.logger.Output(2, fmt.Sprint(v...)) }
+func (l *BufferedFileLogger) Print(v ...interface{}) {
+	s := fmt.Sprint(v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
+	l.logger.Output(2, s)
+}
 
 // Println calls l.Output to print to the logger.
 // Arguments are handled in the manner of fmt.Println.
-func (l *BufferedFileLogger) Println(v ...interface{}) { l.logger.Output(2, fmt.Sprintln(v...)) }
+func (l *BufferedFileLogger) Println(v ...interface{}) {
+	s := fmt.Sprintln(v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
+	l.logger.Output(2, s)
+}
 
 // Fatal is equivalent to l.Print() followed by a call to os.Exit(1).
 func (l *BufferedFileLogger) Fatal(v ...interface{}) {
-	l.logger.Output(2, fmt.Sprint(v...))
+	s := fmt.Sprint(v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
+	l.logger.Output(2, s)
 	os.Exit(1)
 }
 
 // Fatalf is equivalent to l.Printf() followed by a call to os.Exit(1).
 func (l *BufferedFileLogger) Fatalf(format string, v ...interface{}) {
-	l.logger.Output(2, fmt.Sprintf(format, v...))
+	s := fmt.Sprintf(format, v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
+	l.logger.Output(2, s)
 	os.Exit(1)
 }
 
 // Fatalln is equivalent to l.Println() followed by a call to os.Exit(1).
 func (l *BufferedFileLogger) Fatalln(v ...interface{}) {
-	l.logger.Output(2, fmt.Sprintln(v...))
+	s := fmt.Sprintln(v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
+	l.logger.Output(2, s)
 	os.Exit(1)
 }
 
 // Panic is equivalent to l.Print() followed by a call to panic().
 func (l *BufferedFileLogger) Panic(v ...interface{}) {
 	s := fmt.Sprint(v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
 	l.logger.Output(2, s)
 	panic(s)
 }
@@ -133,6 +206,9 @@ func (l *BufferedFileLogger) Panic(v ...interface{}) {
 // Panicf is equivalent to l.Printf() followed by a call to panic().
 func (l *BufferedFileLogger) Panicf(format string, v ...interface{}) {
 	s := fmt.Sprintf(format, v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
 	l.logger.Output(2, s)
 	panic(s)
 }
@@ -140,6 +216,9 @@ func (l *BufferedFileLogger) Panicf(format string, v ...interface{}) {
 // Panicln is equivalent to l.Println() followed by a call to panic().
 func (l *BufferedFileLogger) Panicln(v ...interface{}) {
 	s := fmt.Sprintln(v...)
+	if l.ignoreBlank && strings.Trim(s, DEFALUT_BLANK_STRINGS) == "" {
+		return
+	}
 	l.logger.Output(2, s)
 	panic(s)
 }

@@ -42,7 +42,7 @@ var (
 	membersSyncLock sync.Mutex
 
 	// Election qurorum size
-	qurorumSize       int64
+	qurorumSize       int
 	qurorumWatchIndex uint64
 	qurorumSyncLock   sync.Mutex
 )
@@ -202,7 +202,7 @@ func loopUntilQurorumIsReached() {
 			nodeList = utility.RemoveDuplicateInOrder(nodeList)
 			env.logger.Println("Get election qurorum size, after remove duplicates:", len(nodeList), "members:", nodeList)
 
-			if int64(len(nodeList)) >= qurorumSize {
+			if len(nodeList) >= qurorumSize {
 				membersSyncLock.Lock()
 				membersElected = nodeList[:qurorumSize]
 				membersSyncLock.Unlock()
@@ -293,7 +293,7 @@ func getQurorumSize() {
 		}
 
 		qurorumSyncLock.Lock()
-		qurorumSize = tmp
+		qurorumSize = int(tmp)
 		qurorumWatchIndex = resp.Node.ModifiedIndex
 		qurorumSyncLock.Unlock()
 	}
