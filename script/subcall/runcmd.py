@@ -7,6 +7,9 @@ def runWithStdoutSync(args):
         # fail, no quoted: consul agent -server -data-dir="/tmp/consul" -bootstrap-expect 3  -bind=192.168.4.108 -client=192.168.4.108
         # If passing a single string, either shell must be True (see below) or else the string must simply name the program to be executed without specifying any arguments.
         # remove universal_newlines=True
+        # multiple param
+        print("Start process Now: " + " ".join(args))
+
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, bufsize=1)
 
         with proc.stdout as out:

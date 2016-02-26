@@ -10,11 +10,22 @@ def run(info):
         print(__name__ + "::run() info is not instance Info, please check")
         sys.exit(1)
 
-    runcmd.runWithStdoutSync(["consul", "agent", "-server",
-                              "-data-dir=/tmp/consul",
-                              "-bootstrap-expect", info.Qurorum,
-                              "-bind=" + info.Localip,
-                              "-client=" + info.Localip])
+    args = ["consul", "agent",
+            "-node=Consul-" + info.Localip,
+            "-data-dir=/tmp/consul",
+            "-bind=" + info.Localip,
+            "-client=" + info.Localip]
+
+    if (info.Localip != info.Masterip):  # slave mode
+        args.append("-join=" + info.Masterip)
+
+    else:  # server mode
+        args.append("-server")
+
+        args.append("-bootstrap-expect")
+        args.append(info.Qurorum)
+
+    runcmd.runWithStdoutSync(args)
 
 
 # ImportError: No module named cluster.utils
