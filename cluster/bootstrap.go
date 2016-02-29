@@ -28,6 +28,9 @@ const (
 	CLUSTER_CONFIG_DIR    = "/config"
 	CLUSTER_SELECTION_DIR = "/election"
 	CLUSTER_MEMBER_DIR    = "/members"
+
+	EVENT_ONSTART     = "OnStart"
+	EVENT_ONPOSTSTART = "OnPostStart"
 )
 
 var (
@@ -224,31 +227,87 @@ func bootstrapLocalClusterMember() {
 		env.logger.Fatalln("BootstrapLocalClusterMember error, localip is not in the elected list.")
 	}
 
-	callCmd := exec.Command("python3", "script/main.py")
-	loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
-	loggerIOAdapter.SetPrefix("BootClusterMember: ")
-	callCmd.Stdout = loggerIOAdapter
-	callCmd.Stderr = loggerIOAdapter
-
-	// Transfer variable to python
-	callCmd.Env = []string{"ZOOINIT_CLUSTER_BACKEND=" + env.service}
-	callCmd.Env = append(callCmd.Env, "ZOOINIT_SERVER_IP_LIST="+strings.Join(membersElected, ","))
-	callCmd.Env = append(callCmd.Env, "ZOOINIT_LOCAL_IP="+env.localIP.String())
-	// Master first one
-	callCmd.Env = append(callCmd.Env, "ZOOINIT_MASTER_IP="+membersElected[0])
-	callCmd.Env = append(callCmd.Env, "ZOOINIT_QURORUM="+strconv.Itoa(qurorumSize))
-
+	// Call script
+	callCmd := getCallCmdInstance("BootClusterMember: ", EVENT_ONSTART)
 	err := callCmd.Start()
 	defer callCmd.Process.Kill()
 	if err != nil {
 		env.logger.Println("callCmd.Start() error found:", err)
 	}
 
+	// Important!!! check upstarted
+	env.logger.Println("Call hook script for check discovery cluster's startup...")
+	// Will block
+	loopUntilClusterIsUp(env.timeout)
+
 	callCmd.Wait()
 }
 
-func loopUntilClusterIsUp() {
+func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
+	callCmd := exec.Command("bash", "script/main.py")
 
+	loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
+	loggerIOAdapter.SetPrefix(logPrefix)
+	callCmd.Stdout = loggerIOAdapter
+	callCmd.Stderr = loggerIOAdapter
+
+	// Transfer variable to python
+	callCmd.Env = getCallCmdENVSet(event)
+
+	return callCmd
+}
+
+func getCallCmdENVSet(event string) []string {
+
+	envs := []string{"ZOOINIT_CLUSTER_BACKEND=" + env.clusterBackend}
+	envs = append(envs, "ZOOINIT_CLUSTER_SERVICE="+env.service)
+	envs = append(envs, "ZOOINIT_CLUSTER_EVENT="+event)
+	envs = append(envs, "ZOOINIT_SERVER_IP_LIST="+strings.Join(membersElected, ","))
+	envs = append(envs, "ZOOINIT_LOCAL_IP="+env.localIP.String())
+
+	// Master first one
+	if len(membersElected) > 0 {
+		envs = append(envs, "ZOOINIT_MASTER_IP="+membersElected[0])
+	} else {
+		envs = append(envs, "ZOOINIT_MASTER_IP=")
+	}
+
+	//defalut 0
+	envs = append(envs, "ZOOINIT_QURORUM="+strconv.Itoa(qurorumSize))
+
+	return envs
+}
+
+// Cluster stated check may also need to use scripts hook
+func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
+	var charlist []byte
+
+	//flush last log info
+	defer env.logger.Sync()
+
+	result = false
+	timeCh := make(chan bool)
+	go func() {
+		time.Sleep(timeout)
+		timeCh <- true
+	}()
+
+	// Call script
+	callCmd := getCallCmdInstance("CheckClusterIsUp: ", EVENT_ONPOSTSTART)
+	err = callCmd.Start()
+	defer callCmd.Process.Kill()
+	if err != nil {
+		env.logger.Println("callCmd.Start() error found:", err)
+	}
+
+	// Important!!! check upstarted
+	env.logger.Println("Call hook script for check discovery cluster's startup...")
+
+	callCmd.Wait()
+
+	env.logger.Println("Fetched data LoopTimeoutRequest for loop:", string(charlist))
+
+	return result, err
 }
 
 func watchDogRunning() {
