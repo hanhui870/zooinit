@@ -1,8 +1,10 @@
 class Info(object):
     'Cluster Boot info'
 
-    def __init__(self, service, iplist, localip, masterip, qurorum):
+    def __init__(self, event, service, backend, iplist, localip, masterip, qurorum):
+        self.Event = event
         self.Service = service
+        self.Backend = backend
         self.Iplist = iplist
         self.Localip = localip
         self.Masterip = masterip
@@ -13,7 +15,7 @@ class Info(object):
 
         result = []
         for unit in list:
-            result.append(unit.strip("  "))
+            result.append(unit.strip(" \t"))
 
         return result
 
@@ -26,12 +28,12 @@ class Info(object):
 
 
 if __name__ == "__main__":
-    info = Info("etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "3")
-    print(info.Service, info.Iplist, info.Localip)
+    info = Info("onStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "3")
+    print(info.Backend, info.Iplist, info.Localip)
     print(info.GetIPListArray())
     print(info.CheckLocalIp())
 
-    info = Info("etcd", "192.168.1.1, 192.168.1.2", "192.168.1.5", "192.168.1.2", "3")
-    print(info.Service, info.Iplist, info.Localip)
+    info = Info("onStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.5", "192.168.1.2", "3")
+    print(info.Backend, info.Iplist, info.Localip)
     print(info.GetIPListArray())
     print(info.CheckLocalIp())

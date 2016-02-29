@@ -24,12 +24,26 @@ def main():
     print("Regist python signal handler...")
     signalhandler.registerExitSignal()
 
-    service = os.getenv("ZOOINIT_CLUSTER_BACKEND")
-    if (service == None):
+    backend = os.getenv("ZOOINIT_CLUSTER_BACKEND")
+    if (backend == None):
         print("ENV ZOOINIT_CLUSTER_BACKEND is None, please check zooinit")
         sys.exit(1)
     else:
-        print("Receive ZOOINIT_CLUSTER_BACKEND: " + service)
+        print("Receive ZOOINIT_CLUSTER_BACKEND: " + backend)
+
+    service = os.getenv("ZOOINIT_CLUSTER_SERVICE")
+    if (service == None):
+        print("ENV ZOOINIT_CLUSTER_SERVICE is None, please check zooinit")
+        sys.exit(1)
+    else:
+        print("Receive ZOOINIT_CLUSTER_SERVICE: " + service)
+
+    event = os.getenv("ZOOINIT_CLUSTER_EVENT")
+    if (event == None):
+        print("ENV ZOOINIT_CLUSTER_EVENT is None, please check zooinit")
+        sys.exit(1)
+    else:
+        print("Receive ZOOINIT_CLUSTER_EVENT: " + event)
 
     iplist = os.getenv("ZOOINIT_SERVER_IP_LIST")
     if (iplist == None):
@@ -59,11 +73,13 @@ def main():
     else:
         print("Receive ZOOINIT_QURORUM: " + qurorum)
 
-    info = Info(service, iplist, localip, masterip, qurorum)
+    info = Info(event, service, backend, iplist, localip, masterip, qurorum)
     if (not info.CheckLocalIp()):
         print("ZOOINIT_LOCAL_IP is not in the list ZOOINIT_SERVER_IP_LIST, give up.")
 
-    start = importlib.import_module("cluster.consul.onStart")
+    importPath = "cluster." + backend + "." + event
+    print("import cluster scrpit path: " + importPath)
+    start = importlib.import_module(importPath)
     start.run(info)
 
 
