@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import io
+import time
 from cluster.info import Info
 from subcall import runcmd
 
@@ -23,6 +24,10 @@ def run(info):
 
     if (info.Localip != info.Masterip):  # slave mode
         args.append("-join=" + info.Masterip)
+        # Consul need to wait
+        sec = 3
+        print("This is a slave node, wait master " + str(sec) + " sec")
+        time.sleep(2)
 
 
     runcmd.runWithStdoutSync(args)
