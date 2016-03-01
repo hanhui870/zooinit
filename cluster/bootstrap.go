@@ -366,6 +366,9 @@ func watchDogRunning() {
 	// Call once, script error detect
 	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
 	cmdCallWaitProcess(callCmd, "")
+
+	//TODO Watchdog
+	time.Sleep(time.Hour)
 }
 
 // Need to watch config size
