@@ -88,7 +88,6 @@ func Bootstrap(c *cli.Context) {
 	bootstrapLocalClusterMember()
 
 	// Will block
-	// TODO Cluster is up need to remove watch
 	loopUntilClusterIsUp(env.timeout)
 
 	// watch and check cluster health [watchdog], block until server receive term signal
@@ -351,6 +350,8 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	// Call script
 	callCmd := getCallCmdInstance("OnPostStart: ", env.eventOnPostStart)
 	cmdCallWaitProcess(callCmd, "Cluster is checked up now, The status is normal.")
+
+	clusterUpdated = true
 
 	return result, err
 }
