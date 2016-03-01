@@ -29,8 +29,23 @@ const (
 	CLUSTER_SELECTION_DIR = "/election"
 	CLUSTER_MEMBER_DIR    = "/members"
 
-	EVENT_ONSTART     = "OnStart"
-	EVENT_ONPOSTSTART = "OnPostStart"
+	//Zooinit cluster 事件列表
+	//当前主机注册到发现中心之前执行
+	EVENT_ON_PRE_REGIST = "OnPreRegist"
+	//节点注册成功后执行
+	EVENT_ON_POST_REGIST = "OnPostRegist"
+	//到达法定数量候选人后执行
+	EVENT_ON_REACH_QURORUM_NUM = "OnReachQurorumNum"
+	//启动集群member之前执行
+	EVENT_ON_PRE_START = "OnPreStart"
+	//执行cluster-startup钩子脚本
+	EVENT_ON_START = "OnStart"
+	//检测确认集群已经启动
+	EVENT_ON_POST_START = "OnPostStart"
+	//集群成功启动后调用
+	EVENT_ON_CLUSTER_BOOTED = "OnClusterBooted"
+	//检查集群状态后执行
+	EVENT_ON_HEALTH_CHECK = "OnHealthCheck"
 )
 
 var (
@@ -83,9 +98,6 @@ func Bootstrap(c *cli.Context) {
 
 	// start up local node
 	bootstrapLocalClusterMember()
-
-	// loop wait cluster is up
-	loopUntilClusterIsUp()
 
 	// watch and check cluster health [watchdog]
 	watchDogRunning()
@@ -228,7 +240,7 @@ func bootstrapLocalClusterMember() {
 	}
 
 	// Call script
-	callCmd := getCallCmdInstance("BootClusterMember: ", EVENT_ONSTART)
+	callCmd := getCallCmdInstance("BootClusterMember: ", EVENT_ON_START)
 	err := callCmd.Start()
 	defer callCmd.Process.Kill()
 	if err != nil {
@@ -293,7 +305,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	}()
 
 	// Call script
-	callCmd := getCallCmdInstance("CheckClusterIsUp: ", EVENT_ONPOSTSTART)
+	callCmd := getCallCmdInstance("CheckClusterIsUp: ", EVENT_ON_POST_START)
 	err = callCmd.Start()
 	defer callCmd.Process.Kill()
 	if err != nil {
@@ -302,7 +314,6 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 
 	// Important!!! check upstarted
 	env.logger.Println("Call hook script for check discovery cluster's startup...")
-
 	callCmd.Wait()
 
 	env.logger.Println("Fetched data LoopTimeoutRequest for loop:", string(charlist))

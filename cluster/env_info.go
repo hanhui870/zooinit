@@ -42,7 +42,14 @@ type envInfo struct {
 	iphint string
 
 	// boot event related
-	eventOnStart string
+	eventOnPreRegist       string
+	eventOnPostRegist      string
+	eventOnReachQurorumNum string
+	eventOnPreStart        string
+	eventOnStart           string
+	eventOnPostStart       string
+	eventOnClusterBooted   string
+	eventOnHealthCheck     string
 
 	// app start up configuration, app can fetch through env variables
 	config map[string]string
@@ -126,9 +133,42 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	}
 
 	// Event process
-	obj.eventOnStart = sec.Key("event.OnStart").String()
+	obj.eventOnPreRegist = sec.Key("EVENT_ON_PRE_REGIST").String()
+	if obj.eventOnPreRegist != "" {
+		obj.logger.Println("Found event EVENT_ON_PRE_REGIST:", obj.eventOnPreRegist)
+	}
+	obj.eventOnPostRegist = sec.Key("EVENT_ON_POST_REGIST").String()
+	if obj.eventOnPostRegist != "" {
+		obj.logger.Println("Found event EVENT_ON_POST_REGIST:", obj.eventOnPostRegist)
+	}
+	obj.eventOnReachQurorumNum = sec.Key("EVENT_ON_REACH_QURORUM_NUM").String()
+	if obj.eventOnReachQurorumNum != "" {
+		obj.logger.Println("Found event EVENT_ON_REACH_QURORUM_NUM:", obj.eventOnReachQurorumNum)
+	}
+	obj.eventOnPreStart = sec.Key("EVENT_ON_PRE_START").String()
+	if obj.eventOnPreStart != "" {
+		obj.logger.Println("Found event EVENT_ON_PRE_START:", obj.eventOnPreStart)
+	}
+	//required
+	obj.eventOnStart = sec.Key("EVENT_ON_START").String()
 	if obj.eventOnStart == "" {
-		obj.logger.Fatalln("Config of event.OnStart is empty.")
+		obj.logger.Fatalln("Config of EVENT_ON_START is empty.")
+	} else {
+		obj.logger.Println("Found event EVENT_ON_START:", obj.eventOnStart)
+	}
+	obj.eventOnPostStart = sec.Key("EVENT_ON_POST_START").String()
+	if obj.eventOnPostStart != "" {
+		obj.logger.Println("Found event EVENT_ON_POST_START:", obj.eventOnPostStart)
+	}
+	obj.eventOnClusterBooted = sec.Key("EVENT_ON_CLUSTER_BOOTED").String()
+	if obj.eventOnClusterBooted != "" {
+		obj.logger.Println("Found event EVENT_ON_CLUSTER_BOOTED:", obj.eventOnClusterBooted)
+	}
+	obj.eventOnHealthCheck = sec.Key("EVENT_ON_HEALTH_CHECK").String()
+	if obj.eventOnHealthCheck == "" {
+		obj.logger.Fatalln("Config of EVENT_ON_HEALTH_CHECK is empty.")
+	} else {
+		obj.logger.Println("Found event EVENT_ON_HEALTH_CHECK:", obj.eventOnHealthCheck)
 	}
 
 	obj.iphint = sec.Key("ip.hint").String()
@@ -144,21 +184,22 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 	obj.localIP = localip
 	obj.logger.Println("Found localip for boot:", obj.localIP)
 
-	// store app config
+	// store app config, optional
 	appSection := clusterSection + ".config"
 	secApp, err := iniobj.GetSection(appSection)
 	if err != nil {
-		obj.logger.Fatalln("Config of app config section: " + appSection + " is well configured.")
-	}
-	obj.config = secApp.KeysHash()
-	if len(obj.config) > 0 {
-		obj.logger.Println("Fetch app config section " + appSection + " KV values:")
-
-		for key, value := range obj.config {
-			obj.logger.Println("Key:", key, " Value:", value)
-		}
+		obj.logger.Println("Config of app config section: " + appSection + " is not well configured, continue...")
 	} else {
-		obj.logger.Println("Fetch app config section: empty")
+		obj.config = secApp.KeysHash()
+		if len(obj.config) > 0 {
+			obj.logger.Println("Fetch app config section " + appSection + " KV values:")
+
+			for key, value := range obj.config {
+				obj.logger.Println("Key:", key, " Value:", value)
+			}
+		} else {
+			obj.logger.Println("Fetch app config section: empty")
+		}
 	}
 
 	return obj
