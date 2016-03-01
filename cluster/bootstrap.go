@@ -137,7 +137,7 @@ func initializeClusterDiscoveryInfo() {
 	// Call script
 	if env.eventOnPreRegist != "" {
 		callCmd := getCallCmdInstance("OnPreRegist: ", env.eventOnPreRegist)
-		cmdCallWaitProcess(callCmd, "")
+		cmdCallWaitProcess(callCmd)
 	}
 
 	// Create qurorum in order node
@@ -150,7 +150,7 @@ func initializeClusterDiscoveryInfo() {
 		// Call script
 		if env.eventOnPostRegist != "" {
 			callCmd := getCallCmdInstance("OnPostRegist: ", env.eventOnPostRegist)
-			cmdCallWaitProcess(callCmd, "")
+			cmdCallWaitProcess(callCmd)
 		}
 	}
 
@@ -241,7 +241,7 @@ func loopUntilQurorumIsReached() {
 				// Call script
 				if env.eventOnReachQurorumNum != "" {
 					callCmd := getCallCmdInstance("OnReachQurorumNum: ", env.eventOnReachQurorumNum)
-					cmdCallWaitProcess(callCmd, "")
+					cmdCallWaitProcess(callCmd)
 				}
 				break
 			}
@@ -262,7 +262,7 @@ func bootstrapLocalClusterMember() {
 	// Call script
 	if env.eventOnPreStart != "" {
 		callCmd := getCallCmdInstance("OnPreStart: ", env.eventOnPreStart)
-		cmdCallWaitProcess(callCmd, "")
+		cmdCallWaitProcess(callCmd)
 	}
 
 	// Call script
@@ -291,7 +291,7 @@ func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
 	return callCmd
 }
 
-func cmdCallWaitProcess(callCmd *exec.Cmd, finishLog string) {
+func cmdCallWaitProcess(callCmd *exec.Cmd) {
 	cmdWaitGroup.Add(1)
 	go func() {
 		err := callCmd.Start()
@@ -299,11 +299,6 @@ func cmdCallWaitProcess(callCmd *exec.Cmd, finishLog string) {
 			env.logger.Println("callCmd.Start() error found:", err)
 		}
 		callCmd.Wait()
-
-		// logger after wait is completed.
-		if finishLog != "" {
-			env.logger.Println(finishLog)
-		}
 
 		cmdWaitGroup.Done()
 	}()
@@ -349,9 +344,31 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	env.logger.Println("Call hook script for check discovery cluster's startup...")
 	// Call script
 	callCmd := getCallCmdInstance("OnPostStart: ", env.eventOnPostStart)
-	cmdCallWaitProcess(callCmd, "Cluster is checked up now, The status is normal.")
+	cmdWaitGroup.Add(1)
+	sucCh := make(chan bool)
+	go func() {
+		for {
+			err := callCmd.Start()
+			if err != nil {
+				env.logger.Println("callCmd.Start() error found:", err)
+			}
+			callCmd.Wait()
 
-	clusterUpdated = true
+			if callCmd.ProcessState.Success() {
+				sucCh <- true
+				break
+			}
+
+			env.logger.Println("Cluster is checked up now, The status is normal.")
+			clusterUpdated = true
+
+			cmdWaitGroup.Done()
+		}
+	}()
+
+	select {
+	//TODO
+	}
 
 	return result, err
 }
@@ -360,12 +377,12 @@ func watchDogRunning() {
 	// Call script
 	if env.eventOnClusterBooted != "" {
 		callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
-		cmdCallWaitProcess(callCmd, "")
+		cmdCallWaitProcess(callCmd)
 	}
 
 	// Call once, script error detect
 	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
-	cmdCallWaitProcess(callCmd, "")
+	cmdCallWaitProcess(callCmd)
 
 	//TODO Watchdog
 	time.Sleep(time.Hour)
