@@ -157,7 +157,9 @@ func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
 		obj.logger.Println("Found event EVENT_ON_START:", obj.eventOnStart)
 	}
 	obj.eventOnPostStart = sec.Key("EVENT_ON_POST_START").String()
-	if obj.eventOnPostStart != "" {
+	if obj.eventOnPostStart == "" {
+		obj.logger.Fatalln("Config of EVENT_ON_POST_START is empty.")
+	} else {
 		obj.logger.Println("Found event EVENT_ON_POST_START:", obj.eventOnPostStart)
 	}
 	obj.eventOnClusterBooted = sec.Key("EVENT_ON_CLUSTER_BOOTED").String()

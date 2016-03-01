@@ -81,7 +81,10 @@ func Bootstrap(c *cli.Context) {
 	// start up local node
 	bootstrapLocalClusterMember()
 
-	// watch and check cluster health [watchdog]
+	// Will block
+	loopUntilClusterIsUp(env.timeout)
+
+	// watch and check cluster health [watchdog], block until server receive term signal
 	watchDogRunning()
 }
 
@@ -121,12 +124,30 @@ func initializeClusterDiscoveryInfo() {
 		}
 	}
 
+	// Call script
+	if env.eventOnPreRegist != "" {
+		callCmd := getCallCmdInstance("OnPreRegist: ", env.eventOnPreRegist)
+		err = callCmd.Start()
+		if err != nil {
+			env.logger.Println("callCmd.Start() error found:", err)
+		}
+	}
+
 	// Create qurorum in order node
 	resp, err = kvApi.Conn().CreateInOrder(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, env.localIP.String(), nil)
 	if err != nil {
 		env.logger.Fatalln("Etcd.Api() CreateInOrder error:", err)
 	} else {
 		env.logger.Println("Etcd.Api() CreateInOrder ok:", resp)
+
+		// Call script
+		if env.eventOnPostRegist != "" {
+			callCmd := getCallCmdInstance("OnPostRegist: ", env.eventOnPostRegist)
+			err = callCmd.Start()
+			if err != nil {
+				env.logger.Println("callCmd.Start() error found:", err)
+			}
+		}
 	}
 
 	// Finish
@@ -185,7 +206,10 @@ func loopUntilQurorumIsReached() {
 
 		resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
 		if err != nil {
-			env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest election nodes error:", err)
+			env.logger.Println("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest election nodes error:", err)
+			env.logger.Println("Will exit now...")
+			//Sleep for finish action at watchQurorumSize()
+			time.Sleep(time.Second)
 
 		} else {
 			var nodeList []string
@@ -207,7 +231,7 @@ func loopUntilQurorumIsReached() {
 				env.logger.Println("Get election qurorum finished:", membersElected)
 
 				// Call script
-				if env.eventOnReachQurorumNum {
+				if env.eventOnReachQurorumNum != "" {
 					callCmd := getCallCmdInstance("OnReachQurorumNum: ", env.eventOnReachQurorumNum)
 					err = callCmd.Start()
 					if err != nil {
@@ -231,7 +255,16 @@ func bootstrapLocalClusterMember() {
 	}
 
 	// Call script
-	callCmd := getCallCmdInstance("BootClusterMember: ", env.eventOnStart)
+	if env.eventOnPreStart != "" {
+		callCmd := getCallCmdInstance("OnPreStart: ", env.eventOnPreStart)
+		err := callCmd.Start()
+		if err != nil {
+			env.logger.Println("callCmd.Start() error found:", err)
+		}
+	}
+
+	// Call script
+	callCmd := getCallCmdInstance("OnStart: ", env.eventOnStart)
 	err := callCmd.Start()
 	defer callCmd.Process.Kill()
 	if err != nil {
@@ -240,14 +273,13 @@ func bootstrapLocalClusterMember() {
 
 	// Important!!! check upstarted
 	env.logger.Println("Call hook script for check discovery cluster's startup...")
-	// Will block
-	loopUntilClusterIsUp(env.timeout)
 
-	callCmd.Wait()
+	// watchdog will block
+	go callCmd.Wait()
 }
 
 func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
-	callCmd := exec.Command("bash", "script/main.py")
+	callCmd := exec.Command("bash", "-c", "script/main.py")
 
 	loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
 	loggerIOAdapter.SetPrefix(logPrefix)
@@ -278,6 +310,9 @@ func getCallCmdENVSet(event string) []string {
 	//defalut 0
 	envs = append(envs, "ZOOINIT_QURORUM="+strconv.Itoa(qurorumSize))
 
+	//need to sync PATH ENV
+	envs = append(envs, "PATH="+os.Getenv("PATH"))
+
 	return envs
 }
 
@@ -296,7 +331,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	}()
 
 	// Call script
-	callCmd := getCallCmdInstance("CheckClusterIsUp: ", env.eventOnPostStart)
+	callCmd := getCallCmdInstance("OnPostStart: ", env.eventOnPostStart)
 	err = callCmd.Start()
 	defer callCmd.Process.Kill()
 	if err != nil {
@@ -305,7 +340,8 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 
 	// Important!!! check upstarted
 	env.logger.Println("Call hook script for check discovery cluster's startup...")
-	callCmd.Wait()
+	// watchdog will block
+	go callCmd.Wait()
 
 	env.logger.Println("Fetched data LoopTimeoutRequest for loop:", string(charlist))
 
@@ -313,7 +349,23 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 }
 
 func watchDogRunning() {
+	// Call script
+	if env.eventOnClusterBooted != "" {
+		callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
+		go func() {
+			err := callCmd.Start()
+			if err != nil {
+				env.logger.Println("callCmd.Start() error found:", err)
+			}
+		}()
+	}
 
+	// Call once, script error detect
+	callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
+	err := callCmd.Start()
+	if err != nil {
+		env.logger.Println("callCmd.Start() error found:", err)
+	}
 }
 
 // Need to watch config size
@@ -332,7 +384,21 @@ func watchQurorumSize() {
 		} else {
 			env.logger.Println("Etcd.Api() watch /config/size found change:", resp)
 
-			getQurorumSize()
+			if (resp.Action == "expire" || resp.Action == "delete") && resp.Node.Key == env.discoveryPath {
+				env.logger.Println("Etcd.Api() service boot timeout reach, will delete " + env.discoveryPath + " and terminate app.")
+
+				resp, err := kvApi.Conn().Delete(etcd.Context(), env.discoveryPath, &client.DeleteOptions{Recursive: true, Dir: true})
+				if err != nil {
+					env.logger.Println("Etcd.Api() error while delete "+env.discoveryPath+": ", err)
+				} else {
+					env.logger.Println("Etcd.Api() deleted "+env.discoveryPath+" and bye: ", resp)
+				}
+
+				// ugly impl
+				os.Exit(1)
+			} else {
+				getQurorumSize()
+			}
 		}
 	}
 }
