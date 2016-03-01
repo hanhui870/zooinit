@@ -20,6 +20,7 @@ from cluster import signalhandler
 def main():
     utils.initUnbufferedStdoutIO()
     print("Zoopy started to run...")
+    print("PATH now: " + os.getenv("PATH"))
 
     print("Regist python signal handler...")
     signalhandler.registerExitSignal()
@@ -79,9 +80,13 @@ def main():
 
     importPath = "cluster." + backend + "." + event
     print("import cluster scrpit path: " + importPath)
-    start = importlib.import_module(importPath)
-    start.run(info)
 
+    try:
+        start = importlib.import_module(importPath)
+        start.run(info)
+    except ImportError as err:
+        print("Exception found:" + err.msg)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
