@@ -11,7 +11,7 @@ def run(info):
         print(__name__ + "::run() info is not instance Info, please check")
         sys.exit(1)
 
-        # print("Hello world: "+info.Backend)
+    print("Hello world: " + info.Event)
 
 
 # ImportError: No module named cluster.utils

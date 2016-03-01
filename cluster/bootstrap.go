@@ -48,6 +48,9 @@ var (
 
 	// WaitGroup for goroutine to complete
 	cmdWaitGroup sync.WaitGroup
+
+	// Whether cluster is booted and healthy
+	clusterUpdated bool
 )
 
 func Bootstrap(c *cli.Context) {
@@ -375,6 +378,12 @@ func watchQurorumSize() {
 	for {
 		watch := kvApi.Conn().Watcher(env.discoveryPath+CLUSTER_CONFIG_DIR+"/size", &client.WatcherOptions{AfterIndex: qurorumWatchIndex})
 		resp, err := watch.Next(etcd.Context())
+
+		// if Cluster is booted, quit.
+		if clusterUpdated {
+			break
+		}
+
 		if err != nil {
 			env.logger.Fatalln("Etcd.Api() watch /config/size error:", err)
 		} else {
