@@ -45,6 +45,9 @@ var (
 	qurorumSize       int
 	qurorumWatchIndex uint64
 	qurorumSyncLock   sync.Mutex
+
+	// WaitGroup for goroutine to complete
+	cmdWaitGroup sync.WaitGroup
 )
 
 func Bootstrap(c *cli.Context) {
@@ -82,10 +85,15 @@ func Bootstrap(c *cli.Context) {
 	bootstrapLocalClusterMember()
 
 	// Will block
+	// TODO Cluster is up need to remove watch
 	loopUntilClusterIsUp(env.timeout)
 
 	// watch and check cluster health [watchdog], block until server receive term signal
 	watchDogRunning()
+
+	// final wait.
+	cmdWaitGroup.Wait()
+	env.logger.Println("App runtime reaches end.")
 }
 
 // Fetch bootstrap env instance
@@ -127,10 +135,7 @@ func initializeClusterDiscoveryInfo() {
 	// Call script
 	if env.eventOnPreRegist != "" {
 		callCmd := getCallCmdInstance("OnPreRegist: ", env.eventOnPreRegist)
-		err = callCmd.Start()
-		if err != nil {
-			env.logger.Println("callCmd.Start() error found:", err)
-		}
+		cmdCallWaitProcess(callCmd, "")
 	}
 
 	// Create qurorum in order node
@@ -143,10 +148,7 @@ func initializeClusterDiscoveryInfo() {
 		// Call script
 		if env.eventOnPostRegist != "" {
 			callCmd := getCallCmdInstance("OnPostRegist: ", env.eventOnPostRegist)
-			err = callCmd.Start()
-			if err != nil {
-				env.logger.Println("callCmd.Start() error found:", err)
-			}
+			cmdCallWaitProcess(callCmd, "")
 		}
 	}
 
@@ -190,7 +192,11 @@ func loopUntilQurorumIsReached() {
 	// GetConfigSize
 	getQurorumSize()
 	// Change concurrently
-	go watchQurorumSize()
+	cmdWaitGroup.Add(1)
+	go func() {
+		watchQurorumSize()
+		cmdWaitGroup.Done()
+	}()
 
 	// loop until qurorum size is reached
 	for {
@@ -233,10 +239,7 @@ func loopUntilQurorumIsReached() {
 				// Call script
 				if env.eventOnReachQurorumNum != "" {
 					callCmd := getCallCmdInstance("OnReachQurorumNum: ", env.eventOnReachQurorumNum)
-					err = callCmd.Start()
-					if err != nil {
-						env.logger.Println("callCmd.Start() error found:", err)
-					}
+					cmdCallWaitProcess(callCmd, "")
 				}
 				break
 			}
@@ -257,24 +260,18 @@ func bootstrapLocalClusterMember() {
 	// Call script
 	if env.eventOnPreStart != "" {
 		callCmd := getCallCmdInstance("OnPreStart: ", env.eventOnPreStart)
-		err := callCmd.Start()
-		if err != nil {
-			env.logger.Println("callCmd.Start() error found:", err)
-		}
+		cmdCallWaitProcess(callCmd, "")
 	}
 
 	// Call script
 	callCmd := getCallCmdInstance("OnStart: ", env.eventOnStart)
 	err := callCmd.Start()
-	defer callCmd.Process.Kill()
 	if err != nil {
 		env.logger.Println("callCmd.Start() error found:", err)
 	}
 
-	// Important!!! check upstarted
-	env.logger.Println("Call hook script for check discovery cluster's startup...")
-
-	// watchdog will block
+	// block until cluster is up
+	// no need wait group, need to termiate
 	go callCmd.Wait()
 }
 
@@ -290,6 +287,24 @@ func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
 	callCmd.Env = getCallCmdENVSet(event)
 
 	return callCmd
+}
+
+func cmdCallWaitProcess(callCmd *exec.Cmd, finishLog string) {
+	cmdWaitGroup.Add(1)
+	go func() {
+		err := callCmd.Start()
+		if err != nil {
+			env.logger.Println("callCmd.Start() error found:", err)
+		}
+		callCmd.Wait()
+
+		// logger after wait is completed.
+		if finishLog != "" {
+			env.logger.Println(finishLog)
+		}
+
+		cmdWaitGroup.Done()
+	}()
 }
 
 func getCallCmdENVSet(event string) []string {
@@ -318,8 +333,6 @@ func getCallCmdENVSet(event string) []string {
 
 // Cluster stated check may also need to use scripts hook
 func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
-	var charlist []byte
-
 	//flush last log info
 	defer env.logger.Sync()
 
@@ -330,20 +343,11 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 		timeCh <- true
 	}()
 
-	// Call script
-	callCmd := getCallCmdInstance("OnPostStart: ", env.eventOnPostStart)
-	err = callCmd.Start()
-	defer callCmd.Process.Kill()
-	if err != nil {
-		env.logger.Println("callCmd.Start() error found:", err)
-	}
-
 	// Important!!! check upstarted
 	env.logger.Println("Call hook script for check discovery cluster's startup...")
-	// watchdog will block
-	go callCmd.Wait()
-
-	env.logger.Println("Fetched data LoopTimeoutRequest for loop:", string(charlist))
+	// Call script
+	callCmd := getCallCmdInstance("OnPostStart: ", env.eventOnPostStart)
+	cmdCallWaitProcess(callCmd, "Cluster is checked up now, The status is normal.")
 
 	return result, err
 }
@@ -352,20 +356,12 @@ func watchDogRunning() {
 	// Call script
 	if env.eventOnClusterBooted != "" {
 		callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
-		go func() {
-			err := callCmd.Start()
-			if err != nil {
-				env.logger.Println("callCmd.Start() error found:", err)
-			}
-		}()
+		cmdCallWaitProcess(callCmd, "")
 	}
 
 	// Call once, script error detect
-	callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
-	err := callCmd.Start()
-	if err != nil {
-		env.logger.Println("callCmd.Start() error found:", err)
-	}
+	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
+	cmdCallWaitProcess(callCmd, "")
 }
 
 // Need to watch config size
@@ -393,9 +389,6 @@ func watchQurorumSize() {
 				} else {
 					env.logger.Println("Etcd.Api() deleted "+env.discoveryPath+" and bye: ", resp)
 				}
-
-				// ugly impl
-				os.Exit(1)
 			} else {
 				getQurorumSize()
 			}
