@@ -28,24 +28,6 @@ const (
 	CLUSTER_CONFIG_DIR    = "/config"
 	CLUSTER_SELECTION_DIR = "/election"
 	CLUSTER_MEMBER_DIR    = "/members"
-
-	//Zooinit cluster 事件列表
-	//当前主机注册到发现中心之前执行
-	EVENT_ON_PRE_REGIST = "OnPreRegist"
-	//节点注册成功后执行
-	EVENT_ON_POST_REGIST = "OnPostRegist"
-	//到达法定数量候选人后执行
-	EVENT_ON_REACH_QURORUM_NUM = "OnReachQurorumNum"
-	//启动集群member之前执行
-	EVENT_ON_PRE_START = "OnPreStart"
-	//执行cluster-startup钩子脚本
-	EVENT_ON_START = "OnStart"
-	//检测确认集群已经启动
-	EVENT_ON_POST_START = "OnPostStart"
-	//集群成功启动后调用
-	EVENT_ON_CLUSTER_BOOTED = "OnClusterBooted"
-	//检查集群状态后执行
-	EVENT_ON_HEALTH_CHECK = "OnHealthCheck"
 )
 
 var (
@@ -223,6 +205,15 @@ func loopUntilQurorumIsReached() {
 				membersSyncLock.Unlock()
 
 				env.logger.Println("Get election qurorum finished:", membersElected)
+
+				// Call script
+				if env.eventOnReachQurorumNum {
+					callCmd := getCallCmdInstance("OnReachQurorumNum: ", env.eventOnReachQurorumNum)
+					err = callCmd.Start()
+					if err != nil {
+						env.logger.Println("callCmd.Start() error found:", err)
+					}
+				}
 				break
 			}
 		}
@@ -240,7 +231,7 @@ func bootstrapLocalClusterMember() {
 	}
 
 	// Call script
-	callCmd := getCallCmdInstance("BootClusterMember: ", EVENT_ON_START)
+	callCmd := getCallCmdInstance("BootClusterMember: ", env.eventOnStart)
 	err := callCmd.Start()
 	defer callCmd.Process.Kill()
 	if err != nil {
@@ -305,7 +296,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	}()
 
 	// Call script
-	callCmd := getCallCmdInstance("CheckClusterIsUp: ", EVENT_ON_POST_START)
+	callCmd := getCallCmdInstance("CheckClusterIsUp: ", env.eventOnPostStart)
 	err = callCmd.Start()
 	defer callCmd.Process.Kill()
 	if err != nil {
