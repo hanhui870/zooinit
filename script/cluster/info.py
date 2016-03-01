@@ -28,12 +28,12 @@ class Info(object):
 
 
 if __name__ == "__main__":
-    info = Info("onStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "3")
+    info = Info("OnStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "3")
     print(info.Backend, info.Iplist, info.Localip)
     print(info.GetIPListArray())
     print(info.CheckLocalIp())
 
-    info = Info("onStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.5", "192.168.1.2", "3")
+    info = Info("OnStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.5", "192.168.1.2", "3")
     print(info.Backend, info.Iplist, info.Localip)
     print(info.GetIPListArray())
     print(info.CheckLocalIp())
