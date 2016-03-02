@@ -56,6 +56,7 @@ var (
 	exitApp atomic.Value
 )
 
+// Zooinit app runtime main line
 func Bootstrap(c *cli.Context) {
 	fname := config.GetConfigFileName(c.String("config"))
 	iniobj := config.GetConfigInstance(fname)
