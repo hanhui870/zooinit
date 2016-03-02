@@ -15,7 +15,6 @@ def run(info):
         print(__name__ + "::run() info is not instance Info, please check")
         sys.exit(1)
 
-    global ClientPort, ConnectTimeout
     url = info.GetServiceUrl(Constant.ClientPort)
     print("Use endpoint to detect service: " + url)
     conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
