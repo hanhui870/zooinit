@@ -20,6 +20,7 @@ from cluster import signalhandler
 def main():
     utils.initUnbufferedStdoutIO()
     print("Zoopy started to run...")
+    print("Zoopy PID: " + str(os.getpid()))
     print("PATH now: " + os.getenv("PATH"))
 
     print("Regist python signal handler...")
