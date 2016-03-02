@@ -402,7 +402,6 @@ func watchDogRunning() {
 }
 
 // Need to watch config size
-// TODO Lately need to trigger reconfig cluster size
 func watchQurorumSize() {
 	//flush last log info
 	defer env.logger.Sync()

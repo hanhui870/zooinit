@@ -11,3 +11,8 @@
 ## Testing
 
     go test zooinit/log zooinit/discovery zooinit/config -v
+
+
+## Roadmap
+
+    1. TODO: Lately need to trigger reconfig cluster size
