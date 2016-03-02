@@ -86,7 +86,7 @@ def main():
         start = importlib.import_module(importPath)
         start.run(info)
     except ImportError as err:
-        print("Exception found:" + err.msg)
+        print("Exception found:" + str(err))
         sys.exit(1)
 
 if __name__ == "__main__":
