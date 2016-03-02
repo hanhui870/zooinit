@@ -362,6 +362,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 
 			cmdWaitGroup.Done()
 
+			// Check cluster if up if return exit code is normal
 			if callCmd.ProcessState.Success() {
 				sucCh <- true
 				break
