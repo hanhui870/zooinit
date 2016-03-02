@@ -7,3 +7,8 @@
 ```
 export PYTHONPATH=`pwd`"/script"
 ```
+
+## Python3 depends
+
+1. http.client
+1. ...
