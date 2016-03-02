@@ -30,6 +30,9 @@ class Info(object):
         # python http.client protocal
         return self.Localip + ":" + str(port)
 
+    def GetNodename(self):
+        return "Consul-" + self.Localip
+
 
 if __name__ == "__main__":
     info = Info("OnStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "3")
@@ -39,6 +42,8 @@ if __name__ == "__main__":
     if info.GetServiceUrl(8500) != "192.168.1.2:8500":
         print("Error: info.GetServiceUrl(8500)!=http://192.168.1.2:8500")
 
+    if info.GetNodename() != "Consul-192.168.1.2":
+        print("Error: info.GetNodename() != Consul-192.168.1.2")
 
     info = Info("OnStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.5", "192.168.1.2", "3")
     print(info.Backend, info.Iplist, info.Localip)

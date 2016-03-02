@@ -12,7 +12,7 @@ def run(info):
         sys.exit(1)
 
     args = ["consul", "agent",
-            "-node=Consul-" + info.Localip,
+            "-node=" + info.GetNodename(),
             "-data-dir=/tmp/consul",
             "-bind=" + info.Localip,
             "-client=" + info.Localip]
