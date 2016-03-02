@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -51,6 +52,8 @@ var (
 
 	// Whether cluster is booted and healthy
 	clusterUpdated bool
+	// Is terminate the app
+	exitApp atomic.Value
 )
 
 func Bootstrap(c *cli.Context) {
@@ -354,20 +357,24 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 			}
 			callCmd.Wait()
 
-			if callCmd.ProcessState.Success() {
-				sucCh <- true
-				break
-			}
-
 			env.logger.Println("Cluster is checked up now, The status is normal.")
 			clusterUpdated = true
 
 			cmdWaitGroup.Done()
+
+			if callCmd.ProcessState.Success() {
+				sucCh <- true
+				break
+			}
 		}
 	}()
 
 	select {
-	//TODO
+	case <-timeCh:
+		env.logger.Println("Cluster booting is timeout, will give up and terminate.")
+		exitApp.Store(true)
+	case <-sucCh:
+		break
 	}
 
 	return result, err
@@ -380,12 +387,18 @@ func watchDogRunning() {
 		cmdCallWaitProcess(callCmd)
 	}
 
-	// Call once, script error detect
-	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
-	cmdCallWaitProcess(callCmd)
+	for {
+		if isExit, ok := exitApp.Load().(bool); ok && isExit {
+			break
+		}
 
-	//TODO Watchdog
-	time.Sleep(time.Hour)
+		callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
+		cmdCallWaitProcess(callCmd)
+		if callCmd.ProcessState.Success() {
+			// when the health check call normal return, break the infinite loop
+			break
+		}
+	}
 }
 
 // Need to watch config size
@@ -414,6 +427,10 @@ func watchQurorumSize() {
 				env.logger.Println("Etcd.Api() service boot timeout reach, will delete " + env.discoveryPath + " and terminate app.")
 
 				resp, err := kvApi.Conn().Delete(etcd.Context(), env.discoveryPath, &client.DeleteOptions{Recursive: true, Dir: true})
+
+				// Need exit
+				exitApp.Store(true)
+
 				if err != nil {
 					env.logger.Println("Etcd.Api() error while delete "+env.discoveryPath+": ", err)
 				} else {
