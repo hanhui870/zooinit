@@ -27,7 +27,8 @@ class Info(object):
         return False
 
     def GetServiceUrl(self, port):
-        return "http://" + self.Localip + ":" + str(port)
+        # python http.client protocal
+        return self.Localip + ":" + str(port)
 
 
 if __name__ == "__main__":
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     print(info.Backend, info.Iplist, info.Localip)
     print(info.GetIPListArray())
     print(info.CheckLocalIp())
-    if info.GetServiceUrl(8500) != "http://192.168.1.2:8500":
+    if info.GetServiceUrl(8500) != "192.168.1.2:8500":
         print("Error: info.GetServiceUrl(8500)!=http://192.168.1.2:8500")
 
 
