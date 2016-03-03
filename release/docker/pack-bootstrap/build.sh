@@ -27,5 +27,5 @@ docker build --no-cache -t haimi:zooinit-bootstrap .
 
 cd ..
 
-docker tag -f haimi:zooinit registry.alishui.com:5000/haimi:zooinit-bootstrap
+docker tag -f haimi:zooinit-bootstrap registry.alishui.com:5000/haimi:zooinit-bootstrap
 docker push registry.alishui.com:5000/haimi:zooinit-bootstrap
