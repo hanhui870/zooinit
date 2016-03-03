@@ -8,12 +8,13 @@ FROM haimi:base
 
 MAINTAINER bruce@haimi.com
 
-#golang 安装，通过拓展PATH实现。
-RUN curl -o consul http://docker.alishui.com/consul && chmod a+x ./consul && mv consul /server/zooinit/bin
-
 ENV PATH=$PATH:/server/zooinit/bin
 
 ADD transfer/ /server/zooinit/
+
+#golang 安装，通过拓展PATH实现。
+#20160303 need to take care of ADD order, may overwirte this.
+RUN curl -o consul http://docker.alishui.com/consul && chmod a+x ./consul && mv consul /server/zooinit/bin
 
 VOLUME ["/data"]
 
