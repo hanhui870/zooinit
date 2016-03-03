@@ -346,13 +346,15 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	// Important!!! check upstarted
 	env.logger.Println("Call hook script for check discovery cluster's startup...")
 	// Call script
-	callCmd := getCallCmdInstance("OnPostStart: ", env.eventOnPostStart)
 	cmdWaitGroup.Add(1)
 	sucCh := make(chan bool)
 	go func() {
 		defer cmdWaitGroup.Done()
 
 		for {
+			//Need init every call: callCmd.Start() error found: exec: already started
+			callCmd := getCallCmdInstance("OnPostStart: ", env.eventOnPostStart)
+
 			err := callCmd.Start()
 			if err != nil {
 				env.logger.Println("callCmd.Start() error found:", err)
