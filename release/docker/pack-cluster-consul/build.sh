@@ -17,7 +17,25 @@ cd "../pack-"$Cluster
 echo "Dir now:" `pwd`
 
 
-# delete dir
+# copy python scripts
+SrcDir="transfer/script"
+if [ -d $SrcDir ]; then
+    echo "Delete tmp script dir for sync data..."
+    rm -rf $SrcDir
+fi
+echo "Create new script dir..."
+mkdir $SrcDir
+#script path need under work dir
+echo "Copy latest py scripts..."
+cp -R ../../../script/ $SrcDir
+if [ -d $BinDir"/__pycache__" ]; then
+    echo "Delete bin dir __pycache__..."
+    rm -rf $BinDir"/__pycache__"
+fi
+
+
+#compile go program
+# delete bin dir
 BinDir="transfer/bin"
 if [ -d $BinDir ]; then
     echo "Delete tmp bin dir for sync data..."
@@ -26,15 +44,6 @@ fi
 echo "Create new bin dir..."
 mkdir $BinDir
 
-echo "Copy latest py scripts..."
-cp -R ../../../script/ $BinDir
-if [ -d $BinDir"/__pycache__" ]; then
-    echo "Delete bin dir __pycache__..."
-    rm -rf $BinDir"/__pycache__"
-fi
-
-
-#compile go program
 imageBuild="haimi:go-docker-dev"
 echo -e "Will build go program use docker container from image: "$imageBuild"..."
 docker run -v /Users/bruce/:/Users/bruce/ $imageBuild bash -c "go build -a -ldflags '-s' zooinit \
