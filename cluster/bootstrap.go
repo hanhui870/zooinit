@@ -397,7 +397,7 @@ func watchDogRunning() {
 
 		callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
 		cmdCallWaitProcess(callCmd)
-		if callCmd.ProcessState.Success() {
+		if callCmd.ProcessState != nil && callCmd.ProcessState.Success() {
 			// when the health check call normal return, break the infinite loop
 			break
 		}
