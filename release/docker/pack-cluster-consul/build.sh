@@ -11,6 +11,28 @@ docker images -q --filter "dangling=true"| xargs docker rmi -f
 cd "../compiler"
 sh -c "./build.sh"
 
+#package go program return dir now
+Cluster="cluster-consul"
+cd "../pack-"$Cluster
+echo "Dir now:" `pwd`
+
+
+# delete dir
+BinDir="transfer/bin"
+if [ -d $BinDir ]; then
+    echo "Delete tmp bin dir for sync data..."
+    rm -rf $BinDir
+fi
+echo "Create new bin dir..."
+mkdir $BinDir
+
+echo "Copy latest py scripts..."
+cp -R ../../../script/ $BinDir
+if [ -d $BinDir"/__pycache__" ]; then
+    echo "Delete bin dir __pycache__..."
+    rm -rf $BinDir"/__pycache__"
+fi
+
 
 #compile go program
 imageBuild="haimi:go-docker-dev"
@@ -19,8 +41,6 @@ docker run -v /Users/bruce/:/Users/bruce/ $imageBuild bash -c "go build -a -ldfl
     && mv zooinit /Users/bruce/project/godev/src/zooinit/release/docker/pack-cluster-consul/transfer/bin"
 
 
-#package go program return dir now
-cd "../pack-cluster-consul"
 echo -e "Will package go program into docker image...\nDir now:" `pwd`
 
 #package code need no cache, because may change transfer files.
