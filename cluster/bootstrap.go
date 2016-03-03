@@ -361,12 +361,12 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 			}
 			callCmd.Wait()
 
-			env.logger.Println("Cluster is checked up now, The status is normal.")
-			clusterUpdated = true
-
 			// Check cluster if up if return exit code is normal
 			if callCmd.ProcessState.Success() {
 				sucCh <- true
+
+				env.logger.Println("Cluster is checked up now, The status is normal.")
+				clusterUpdated = true
 				break
 			}
 		}
