@@ -17,4 +17,6 @@ ENV PATH=$PATH:/server/zooinit/bin
 
 ADD transfer/ /server/zooinit/
 
+VOLUME ["/data"]
+
 ENTRYPOINT ["/server/zooinit/entrypoint.sh"]
