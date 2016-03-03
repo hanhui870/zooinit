@@ -1,4 +1,4 @@
-#构建命令：docker build --no-cache -t haimi:zooinit .
+#构建命令：docker build --no-cache -t haimi:zooinit-bootstrap .
 #run:
 #version: 0.1.0
 #version: 0.1.0 zooinit+etcd package
