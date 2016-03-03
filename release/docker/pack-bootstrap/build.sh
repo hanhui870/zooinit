@@ -13,13 +13,14 @@ sh -c "./build.sh"
 
 
 #compile go program
-echo -e "Will build go program...\nDir now:" `pwd`
-docker run -v /Users/bruce/:/Users/bruce/ haimi:go-docker-dev bash -c "go build -a -ldflags '-s' zooinit \
+imageBuild="haimi:go-docker-dev"
+echo -e "Will build go program use docker container from image: "$imageBuild"..."
+docker run -v /Users/bruce/:/Users/bruce/ $imageBuild bash -c "go build -a -ldflags '-s' zooinit \
     && mv zooinit /Users/bruce/project/godev/src/zooinit/release/docker/pack-bootstrap/transfer/bin"
 
 
 #package go program return dir now
-cd -
+cd "../pack-bootstrap"
 echo -e "Will package go program into docker image...\nDir now:" `pwd`
 
 #package code need no cache, because may change transfer files.
