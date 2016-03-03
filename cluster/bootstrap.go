@@ -200,8 +200,8 @@ func loopUntilQurorumIsReached() {
 	// Change concurrently
 	cmdWaitGroup.Add(1)
 	go func() {
+		defer cmdWaitGroup.Done()
 		watchQurorumSize()
-		cmdWaitGroup.Done()
 	}()
 
 	// loop until qurorum size is reached
@@ -298,13 +298,12 @@ func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
 func cmdCallWaitProcess(callCmd *exec.Cmd) {
 	cmdWaitGroup.Add(1)
 	go func() {
+		defer cmdWaitGroup.Done()
 		err := callCmd.Start()
 		if err != nil {
 			env.logger.Println("callCmd.Start() error found:", err)
 		}
 		callCmd.Wait()
-
-		cmdWaitGroup.Done()
 	}()
 }
 
@@ -351,6 +350,8 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	cmdWaitGroup.Add(1)
 	sucCh := make(chan bool)
 	go func() {
+		defer cmdWaitGroup.Done()
+
 		for {
 			err := callCmd.Start()
 			if err != nil {
@@ -360,8 +361,6 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 
 			env.logger.Println("Cluster is checked up now, The status is normal.")
 			clusterUpdated = true
-
-			cmdWaitGroup.Done()
 
 			// Check cluster if up if return exit code is normal
 			if callCmd.ProcessState.Success() {
