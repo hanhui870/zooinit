@@ -413,9 +413,6 @@ func watchDogRunning() {
 	// Call OnClusterBooted script, no need goroutine
 	if env.eventOnClusterBooted != "" {
 		callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
-		cmdWaitGroup.Add(1)
-
-		defer cmdWaitGroup.Done()
 		err := callCmd.Start()
 		if err != nil {
 			env.logger.Println("callCmd.Start() error found:", err)
@@ -423,6 +420,7 @@ func watchDogRunning() {
 		callCmd.Wait()
 
 		// Set config size
+		// TODO not created.
 		booted := "true," + env.localIP.String() + "," + time.Now().String()
 		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, booted, &client.SetOptions{PrevExist: client.PrevNoExist})
 		if err != nil {
