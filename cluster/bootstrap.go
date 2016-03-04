@@ -25,10 +25,12 @@ const (
 
 	// 1. consul/config/size qurorum大小
 	// 2. consul/election/ 候选人选举目录，CreateInOrder
-	// 3. consul/members/ 正式集群中的候选人
-	CLUSTER_CONFIG_DIR    = "/config"
-	CLUSTER_SELECTION_DIR = "/election"
-	CLUSTER_MEMBER_DIR    = "/members"
+	// 3. consul/members/ 正式集群中的候选人,需要health check 更新.
+	CLUSTER_CONFIG_DIR = "/config"
+	// 4. consul/config/booted check whether the cluster is booted.
+	CLUSTER_CONFIG_DIR_BOOTED = CLUSTER_CONFIG_DIR + "/booted"
+	CLUSTER_SELECTION_DIR     = "/election"
+	CLUSTER_MEMBER_DIR        = "/members"
 )
 
 var (
@@ -123,6 +125,7 @@ func initializeClusterDiscoveryInfo() {
 			env.logger.Fatalln("Etcd.Api() set "+env.discoveryPath+" error:", err)
 		} else {
 			env.logger.Println("Etcd.Api() set " + env.discoveryPath + " notice: node exist, will add qurorum directly.")
+
 		}
 
 	} else {
