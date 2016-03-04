@@ -141,7 +141,7 @@ func initializeClusterDiscoveryInfo() {
 			resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
 			if err == nil {
 				env.logger.Fatalln("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED)
-			} else if !etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
+			} else if !etcd.EqualEtcdError(err, client.ErrorCodeKeyNotFound) {
 				env.logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
 			}
 		}
