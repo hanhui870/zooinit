@@ -224,15 +224,16 @@ func (f *FileLog) backgroundSaveWorker() error {
 		return os.ErrInvalid
 	}
 
-	for {
-		//实现每多少时间保存一次
-		timeChan := make(chan int)
-		go func() {
+	//实现每多少时间保存一次 Must outside for loop
+	timeChan := make(chan int)
+	go func() {
+		for {
 			time.Sleep(f.ttl)
-
 			timeChan <- 1
-		}()
+		}
+	}()
 
+	for {
 		select {
 		case writeSignal := <-f.syncChan:
 			if writeSignal == WRITE_SIGNAL {
