@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	syslog "log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -70,8 +71,17 @@ func Bootstrap(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	cluster := c.Args()[0]
-	env = NewEnvInfo(iniobj, cluster)
+	servie := c.Args()[0]
+	if strings.Trim(servie, " \t\n\r") == "" {
+		syslog.Fatalln("Command args of service name is empty.")
+	}
+
+	// backend of servie
+	backend := c.String("backend")
+	if backend == "" {
+		backend = servie
+	}
+	env = NewEnvInfo(iniobj, backend, servie)
 
 	//flush last log info
 	defer env.logger.Sync()

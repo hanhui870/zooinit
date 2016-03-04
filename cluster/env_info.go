@@ -56,25 +56,25 @@ type envInfo struct {
 }
 
 // New env from file
-func NewEnvInfoFile(fname string, cluster string) *envInfo {
+func NewEnvInfoFile(fname string, backend, servie string) *envInfo {
 	iniobj := config.GetConfigInstance(fname)
 
-	return NewEnvInfo(iniobj, cluster)
+	return NewEnvInfo(iniobj, backend, servie)
 }
 
-func NewEnvInfo(iniobj *ini.File, cluster string) *envInfo {
+func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
 	obj := new(envInfo)
 
 	// init map
 	obj.config = make(map[string]string)
 
-	clusterSection := CONFIG_SECTION + "." + cluster
+	clusterSection := CONFIG_SECTION + "." + backend
 	sec, err := iniobj.GetSection(clusterSection)
 	if err != nil {
 		log.Fatalln("Config of section: " + clusterSection + " is not well configured.")
 	}
 
-	obj.service = cluster
+	obj.service = servie
 	if obj.service == "" {
 		log.Fatalln("Config of service is empty.")
 	}

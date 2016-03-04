@@ -22,6 +22,12 @@ func main() {
 		Usage: "Configuration file of zooini.",
 	}
 
+	backendFlag := &cli.StringFlag{
+		Name:  "backend, b",
+		Value: "",
+		Usage: "Backend name of cluster, eg: consul, etcd, zookeeper...",
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:    "bootstrap",
@@ -34,10 +40,10 @@ func main() {
 		},
 		{
 			Name:   "cluster",
-			Usage:  "Usage: " + os.Args[0] + " cluster -f config.ini clustername \nBootstrop the cluster configured in the configuration file.",
+			Usage:  "Usage: " + os.Args[0] + " cluster -f config.ini -b backend service \nBootstrop the cluster configured in the configuration file.",
 			Action: cluster.Bootstrap,
 			Flags: []cli.Flag{
-				cfgFlag,
+				cfgFlag, backendFlag,
 			},
 		},
 	}

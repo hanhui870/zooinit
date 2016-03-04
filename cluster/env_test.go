@@ -18,7 +18,7 @@ func TestENVInterfaceNormal(t *testing.T) {
 }
 
 func TestClusterENVNormal(t *testing.T) {
-	env = NewEnvInfoFile("../config/config.ini", "consul")
+	env = NewEnvInfoFile("../config/config.ini", "consul", "consul")
 
 	t.Logf("Parsed env info values: %q", env)
 
