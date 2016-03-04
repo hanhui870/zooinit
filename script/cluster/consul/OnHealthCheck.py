@@ -17,9 +17,11 @@ def run(info):
 
     url = info.GetServiceUrl(Constant.ClientPort)
     print("Use endpoint to detect service: " + url)
-    conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
+
     while True:
         try:
+            # Found error:timed out while health check, continue loop... need to create every time.
+            conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
             # check leader exists
             conn.request("get", "/v1/health/node/" + info.GetNodename())
             resp = conn.getresponse()
