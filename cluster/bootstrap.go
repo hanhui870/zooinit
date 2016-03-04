@@ -390,18 +390,34 @@ func watchDogRunning() {
 		cmdCallWaitProcess(callCmd)
 	}
 
+	//this can not use goroutine, this is a loop
 	for {
 		if isExit, ok := exitApp.Load().(bool); ok && isExit {
 			break
 		}
 
-		callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
-		cmdCallWaitProcess(callCmd)
-		if callCmd.ProcessState != nil && callCmd.ProcessState.Success() {
-			// when the health check call normal return, break the infinite loop
+		callResult := execHealthChechRunning()
+		if callResult {
 			break
 		}
 	}
+}
+
+func execHealthChechRunning() bool {
+	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
+	defer callCmd.Process.Kill()
+
+	err := callCmd.Start()
+	if err != nil {
+		env.logger.Println("callCmd.Start() execHealthChechRunning error found:", err)
+	}
+	callCmd.Wait()
+	if callCmd.ProcessState != nil && callCmd.ProcessState.Success() {
+		// when the health check call normal return, break the infinite loop
+		return true
+	}
+
+	return false
 }
 
 // Need to watch config size
