@@ -27,7 +27,9 @@ const (
 	// 2. consul/election/ 候选人选举目录，CreateInOrder
 	// 3. consul/members/ 正式集群中的候选人,需要health check 更新.
 	CLUSTER_CONFIG_DIR = "/config"
-	// 4. consul/config/booted check whether the cluster is booted.
+	// 4. consul/config/size cluster qurorum size
+	CLUSTER_CONFIG_DIR_SIZE = CLUSTER_CONFIG_DIR + "/size"
+	// 5. consul/config/booted check whether the cluster is booted.
 	CLUSTER_CONFIG_DIR_BOOTED = CLUSTER_CONFIG_DIR + "/booted"
 	CLUSTER_SELECTION_DIR     = "/election"
 	CLUSTER_MEMBER_DIR        = "/members"
@@ -126,6 +128,12 @@ func initializeClusterDiscoveryInfo() {
 		} else {
 			env.logger.Println("Etcd.Api() set " + env.discoveryPath + " notice: node exist, will add qurorum directly.")
 
+			resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
+			if err == nil {
+				env.logger.Fatalln("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED)
+			} else if !etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
+				env.logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
+			}
 		}
 
 	} else {
@@ -133,11 +141,11 @@ func initializeClusterDiscoveryInfo() {
 		env.logger.Println("Etcd.Api() set "+env.discoveryPath+" ok, TTL:", env.timeout.String(), resp)
 
 		// Set config size
-		resp, err = kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR+"/size", strconv.Itoa(env.qurorum), &client.SetOptions{PrevExist: client.PrevNoExist})
+		resp, err = kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_SIZE, strconv.Itoa(env.qurorum), &client.SetOptions{PrevExist: client.PrevNoExist})
 		if err != nil {
-			env.logger.Fatalln("Etcd.Api() set /config/size error:", err)
+			env.logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
 		} else {
-			env.logger.Println("Etcd.Api() set /config/size ok, Qurorum size:", env.qurorum, resp)
+			env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_SIZE+" ok, Qurorum size:", env.qurorum, resp)
 		}
 	}
 
@@ -387,10 +395,44 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 }
 
 func watchDogRunning() {
-	// Call script
+	//flush last log info
+	defer env.logger.Sync()
+
+	kvApi := getClientKeysApi()
+
+	// Call OnClusterBooted script, no need goroutine
 	if env.eventOnClusterBooted != "" {
 		callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
-		cmdCallWaitProcess(callCmd)
+		cmdWaitGroup.Add(1)
+
+		defer cmdWaitGroup.Done()
+		err := callCmd.Start()
+		if err != nil {
+			env.logger.Println("callCmd.Start() error found:", err)
+		}
+		callCmd.Wait()
+
+		// Set config size
+		booted := "true," + env.localIP.String() + "," + time.Now().String()
+		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, booted, &client.SetOptions{PrevExist: client.PrevNoExist})
+		if err != nil {
+			//ignore exist error
+			if !etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
+				// check if exist need to add qurorum
+				env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" set by another node, error:", err)
+
+				resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
+				if err == nil {
+					env.logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, "Resp:", resp)
+				} else {
+					env.logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
+				}
+			} else {
+				env.logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" error:", err)
+			}
+		} else {
+			env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" ok:", booted, "Resp:", resp)
+		}
 	}
 
 	//this can not use goroutine, this is a loop
@@ -407,6 +449,9 @@ func watchDogRunning() {
 }
 
 func execHealthChechRunning() bool {
+	//flush last log info
+	defer env.logger.Sync()
+
 	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
 	// may runtime error: invalid memory address or nil pointer dereference
 	defer func() {
@@ -436,7 +481,7 @@ func watchQurorumSize() {
 	kvApi := getClientKeysApi()
 
 	for {
-		watch := kvApi.Conn().Watcher(env.discoveryPath+CLUSTER_CONFIG_DIR+"/size", &client.WatcherOptions{AfterIndex: qurorumWatchIndex})
+		watch := kvApi.Conn().Watcher(env.discoveryPath+CLUSTER_CONFIG_DIR_SIZE, &client.WatcherOptions{AfterIndex: qurorumWatchIndex})
 		resp, err := watch.Next(etcd.Context())
 
 		// if Cluster is booted, quit.
@@ -445,9 +490,9 @@ func watchQurorumSize() {
 		}
 
 		if err != nil {
-			env.logger.Fatalln("Etcd.Api() watch /config/size error:", err)
+			env.logger.Fatalln("Etcd.Api() watch "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
 		} else {
-			env.logger.Println("Etcd.Api() watch /config/size found change:", resp)
+			env.logger.Println("Etcd.Api() watch "+CLUSTER_CONFIG_DIR_SIZE+" found change:", resp)
 
 			if (resp.Action == "expire" || resp.Action == "delete") && resp.Node.Key == env.discoveryPath {
 				env.logger.Println("Etcd.Api() service boot timeout reach, will delete " + env.discoveryPath + " and terminate app.")
@@ -475,14 +520,14 @@ func getQurorumSize() {
 
 	kvApi := getClientKeysApi()
 	// get config size
-	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR+"/size", &client.GetOptions{})
+	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_SIZE, &client.GetOptions{})
 	if err != nil {
-		env.logger.Fatalln("Etcd.Api() get /config/size error:", err)
+		env.logger.Fatalln("Etcd.Api() get "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
 	} else {
-		env.logger.Println("Etcd.Api() get /config/size ok, Qurorum size:", resp.Node.Value)
+		env.logger.Println("Etcd.Api() get "+CLUSTER_CONFIG_DIR_SIZE+" ok, Qurorum size:", resp.Node.Value)
 		tmp, err := strconv.ParseInt(resp.Node.Value, 10, 64)
 		if err != nil {
-			env.logger.Fatalln("Error: strconv.ParseInt(/config/size) error:", err)
+			env.logger.Fatalln("Error: strconv.ParseInt("+CLUSTER_CONFIG_DIR_SIZE+") error:", err)
 		}
 
 		qurorumSyncLock.Lock()
