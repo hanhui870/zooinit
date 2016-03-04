@@ -71,7 +71,12 @@ func BootstrapEtcd(env *envInfo) error {
 			env.logger.Println("Exec Internal OK, PID:", internalCmd.Process.Pid)
 
 			// Release process after cluster up.
-			defer internalCmd.Process.Kill()
+			// may runtime error: invalid memory address or nil pointer dereference
+			defer func() {
+				if internalCmd.Process != nil {
+					internalCmd.Process.Kill()
+				}
+			}()
 
 			// Set PID
 			env.internalCmdInstance = internalCmd
@@ -150,7 +155,12 @@ func BootstrapEtcd(env *envInfo) error {
 	clusterCmd.Stderr = loggerIOAdapter
 
 	err = clusterCmd.Start()
-	defer clusterCmd.Process.Kill()
+	// may runtime error: invalid memory address or nil pointer dereference
+	defer func() {
+		if clusterCmd.Process != nil {
+			clusterCmd.Process.Kill()
+		}
+	}()
 
 	if err != nil {
 		env.logger.Fatalln("Exec Discovery ExecCmd Error: ", err)
@@ -173,7 +183,7 @@ func BootstrapEtcd(env *envInfo) error {
 
 	// Close internal service
 	env.logger.Println("Cluster etcd service is booted. Internal service is going to be terminated.")
-	if internalCmd != nil {
+	if internalCmd != nil && internalCmd.Process != nil {
 		internalCmd.Process.Kill()
 	}
 

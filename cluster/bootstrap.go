@@ -405,7 +405,12 @@ func watchDogRunning() {
 
 func execHealthChechRunning() bool {
 	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
-	defer callCmd.Process.Kill()
+	// may runtime error: invalid memory address or nil pointer dereference
+	defer func() {
+		if callCmd.Process != nil {
+			callCmd.Process.Kill()
+		}
+	}()
 
 	err := callCmd.Start()
 	if err != nil {
