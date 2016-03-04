@@ -14,21 +14,35 @@ def run(info):
         print(__name__ + "::run() info is not instance Info, please check")
         sys.exit(1)
 
+
     url = info.GetServiceUrl(Constant.ClientPort)
     print("Use endpoint to detect service: " + url)
     conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
     while True:
-        # check leader exists
-        conn.request("get", "/v1/health/node/" + info.GetNodename())
-        resp = conn.getresponse()
-        con = resp.read().decode("UTF-8").strip("")
-        # json need to docode too
-        health = json.loads(con)
-        print("Health info " + info.GetNodename() + ":", resp.status, resp.reason, health)
-        if (len(health) > 0):
-            healthinfo = health[0]
-            if type(healthinfo) == type({}) and "Status" in healthinfo and healthinfo["Status"] == "passing":
-                print("Node " + info.GetNodename() + " health status check passing")
+        try:
+            # check leader exists
+            conn.request("get", "/v1/health/node/" + info.GetNodename())
+            resp = conn.getresponse()
+            con = resp.read().decode("UTF-8").strip("")
+
+            # json need to docode too
+            # raise ValueError(errmsg("Expecting value", s, err.value)) from None
+            if con:
+                health = json.loads(con)
+            else:
+                health = []
+            print("Health info " + info.GetNodename() + ":", resp.status, resp.reason, health)
+            if (len(health) > 0):
+                healthinfo = health[0]
+                if type(healthinfo) == type({}) and "Status" in healthinfo and healthinfo["Status"] == "passing":
+                    print("Node " + info.GetNodename() + " health status check passing")
+                else:
+                    print("Node health check failed.")
+            else:
+                print("Node health info empty.")
+
+        except Exception as err:
+            print("Found error:" + str(err) + " while health check, continue loop...")
 
         time.sleep(1)
 

@@ -17,9 +17,10 @@ def run(info):
 
     url = info.GetServiceUrl(Constant.ClientPort)
     print("Use endpoint to detect service: " + url)
-    conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
+
     while True:
         try:
+            conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
             # check leader exists
             conn.request("get", "/v1/status/leader")
             resp = conn.getresponse()
