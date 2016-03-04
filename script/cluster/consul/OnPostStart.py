@@ -50,7 +50,9 @@ def run(info):
                         sys.exit(1)
 
                 else:
-                    pass
+                    print("Cluster status checks failed, leader is not in the peerlist.")
+            else:
+                print("Cluster status checks failed, leader or peers empty.")
 
         except Exception as err:
             print("Found error:" + str(err) + " while health check, continue loop...")
