@@ -369,11 +369,6 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	kvApi := getClientKeysApi()
 
 	result = false
-	timeCh := make(chan bool)
-	go func() {
-		time.Sleep(timeout)
-		timeCh <- true
-	}()
 
 	// Important!!! check upstarted
 	env.logger.Println("Call hook script for check discovery cluster's startup...")
@@ -427,7 +422,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	}()
 
 	select {
-	case <-timeCh:
+	case <-time.After(env.timeout):
 		env.logger.Println("Cluster booting is timeout, will give up and terminate.")
 		exitApp.Store(true)
 	case <-sucCh:
