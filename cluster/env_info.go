@@ -241,6 +241,14 @@ func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
 	return e.logger
 }
 
+func (e *envInfo) GetNodename() string {
+	if e == nil {
+		return 0
+	}
+
+	return e.clusterBackend + "-" + e.localIP.String()
+}
+
 func (e *envInfo) registerSignalWatch() {
 	if e == nil {
 		return

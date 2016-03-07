@@ -3,6 +3,7 @@ package cluster
 import (
 	"fmt"
 	syslog "log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
@@ -21,8 +22,9 @@ import (
 )
 
 const (
-	CONFIG_SECTION            = "system.cluster"
-	CLUSTER_BOOTSTRAP_TIMEOUT = 5 * time.Minute
+	CONFIG_SECTION                = "system.cluster"
+	CLUSTER_BOOTSTRAP_TIMEOUT     = 5 * time.Minute
+	CLUSTER_HEALTH_CHECK_INTERVAL = 1 * time.Second
 
 	// 1. consul/config/size qurorum大小
 	// 2. consul/election/ 候选人选举目录，CreateInOrder
@@ -33,7 +35,10 @@ const (
 	// 5. consul/config/booted check whether the cluster is booted.
 	CLUSTER_CONFIG_DIR_BOOTED = CLUSTER_CONFIG_DIR + "/booted"
 	CLUSTER_SELECTION_DIR     = "/election"
-	CLUSTER_MEMBER_DIR        = "/members"
+	// 6. check health update this
+	CLUSTER_MEMBER_DIR = "/members"
+	// member node ttl
+	CLUSTER_MEMBER_NODE_TTL = 1 * time.Minute
 )
 
 var (
@@ -395,6 +400,9 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 				env.logger.Println("Cluster is checked up now, The status is normal.")
 				clusterUpdated = true
 
+				// schedule to update discovery path ttl
+				go updateDiscoveryTTL()
+
 				// Set config/booted to true
 				booted := "true," + env.localIP.String() + "," + time.Now().String()
 				resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, booted, &client.SetOptions{PrevExist: client.PrevNoExist})
@@ -432,6 +440,30 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	return result, err
 }
 
+// usage: go updateDiscoveryTTL()
+// update need to call after
+func updateDiscoveryTTL() {
+	//flush last log info
+	defer env.logger.Sync()
+
+	kvApi := getClientKeysApi()
+	rand.Seed(time.Now().UnixNano())
+
+	//30-59s 随机更新一次,所有节点都会更新
+	for {
+		// Update TTL
+		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: env.timeout, PrevExist: client.PrevExist})
+		if err != nil {
+			env.logger.Fatalln("Etcd.Api() update "+env.discoveryPath+" TTL error:", err)
+		} else {
+			env.logger.Println("Etcd.Api() update "+env.discoveryPath+" ok", "Resp:", resp)
+		}
+
+		next := time.Duration(30 + rand.Intn(30))
+		time.Sleep(next * time.Second)
+	}
+}
+
 func watchDogRunning() {
 	//flush last log info
 	defer env.logger.Sync()
@@ -456,11 +488,14 @@ func watchDogRunning() {
 		if callResult {
 			break
 		}
+
+		// sleep 1s
+		time.Sleep(CLUSTER_HEALTH_CHECK_INTERVAL)
 	}
 }
 
 // Check cluster health after cluster is up.
-func execHealthChechRunning() bool {
+func execHealthChechRunning() (result bool) {
 	//flush last log info
 	defer env.logger.Sync()
 
@@ -477,12 +512,27 @@ func execHealthChechRunning() bool {
 		env.logger.Println("callCmd.Start() execHealthChechRunning error found:", err)
 	}
 	callCmd.Wait()
+
+	var cm *ClusterMember
+	// ttl 1min, update 1/s
 	if callCmd.ProcessState != nil && callCmd.ProcessState.Success() {
 		// when the health check call normal return, break the infinite loop
-		return true
+		result = true
+	} else {
+		result = false
 	}
 
-	return false
+	cm = NewClusterMember(env.GetNodename(), env.localIP.String(), result)
+	kvApi := getClientKeysApi()
+	pathNode := env.discoveryPath + CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
+	resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: CLUSTER_MEMBER_NODE_TTL})
+	if err != nil {
+		env.logger.Fatalln("Etcd.Api() update "+pathNode+" State error:", err)
+	} else {
+		env.logger.Println("Etcd.Api() update "+pathNode+" ok", "Resp:", resp)
+	}
+
+	return result
 }
 
 // Need to watch config size
