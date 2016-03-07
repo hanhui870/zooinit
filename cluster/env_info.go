@@ -95,7 +95,7 @@ func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
 	//register signal watcher
 	obj.registerSignalWatch()
 
-	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
+	obj.logger.Println("Service name of cluster is:", obj.service)
 
 	obj.discoveryMethod = sec.Key("discover.method").String()
 	if obj.discoveryMethod == "" {
@@ -203,6 +203,8 @@ func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
 			obj.logger.Println("Fetch app config section: empty")
 		}
 	}
+
+	obj.logger.Println("Configure file parsed. Waiting to be boostrapped...")
 
 	return obj
 }

@@ -241,8 +241,17 @@ func loopUntilQurorumIsReached() {
 		if err != nil {
 			env.logger.Println("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest election nodes error:", err)
 			env.logger.Println("Will exit now...")
+
+			//Need to expecility exit
 			//Sleep for finish action at watchQurorumSize()
-			time.Sleep(time.Second)
+			for {
+				if isExit, ok := exitApp.Load().(bool); ok && isExit {
+					env.logger.Println("Wait completed, bye...")
+					os.Exit(0)
+				}
+
+				time.Sleep(100 * time.Millisecond)
+			}
 
 		} else {
 			var nodeList []string
@@ -456,6 +465,7 @@ func watchDogRunning() {
 	}
 }
 
+// Check cluster health after cluster is up.
 func execHealthChechRunning() bool {
 	//flush last log info
 	defer env.logger.Sync()
@@ -507,14 +517,14 @@ func watchQurorumSize() {
 
 				resp, err := kvApi.Conn().Delete(etcd.Context(), env.discoveryPath, &client.DeleteOptions{Recursive: true, Dir: true})
 
-				// Need exit
-				exitApp.Store(true)
-
 				if err != nil {
 					env.logger.Println("Etcd.Api() error while delete "+env.discoveryPath+": ", err)
 				} else {
 					env.logger.Println("Etcd.Api() deleted "+env.discoveryPath+" and bye: ", resp)
 				}
+
+				// Need exit
+				exitApp.Store(true)
 			} else {
 				getQurorumSize()
 			}
