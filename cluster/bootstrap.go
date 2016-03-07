@@ -366,6 +366,8 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	//flush last log info
 	defer env.logger.Sync()
 
+	kvApi := getClientKeysApi()
+
 	result = false
 	timeCh := make(chan bool)
 	go func() {
@@ -397,6 +399,28 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 
 				env.logger.Println("Cluster is checked up now, The status is normal.")
 				clusterUpdated = true
+
+				// Set config/booted to true
+				booted := "true," + env.localIP.String() + "," + time.Now().String()
+				resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, booted, &client.SetOptions{PrevExist: client.PrevNoExist})
+				if err != nil {
+					//ignore exist error
+					if !etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
+						// check if exist need to add qurorum
+						env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" set by another node, error:", err)
+
+						resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
+						if err == nil {
+							env.logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, "Resp:", resp)
+						} else {
+							env.logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
+						}
+					} else {
+						env.logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" error:", err)
+					}
+				} else {
+					env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" ok:", booted, "Resp:", resp)
+				}
 				break
 			}
 		}
@@ -417,8 +441,6 @@ func watchDogRunning() {
 	//flush last log info
 	defer env.logger.Sync()
 
-	kvApi := getClientKeysApi()
-
 	// Call OnClusterBooted script, no need goroutine
 	if env.eventOnClusterBooted != "" {
 		callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
@@ -427,29 +449,6 @@ func watchDogRunning() {
 			env.logger.Println("callCmd.Start() error found:", err)
 		}
 		callCmd.Wait()
-
-		// Set config size
-		// TODO not created.
-		booted := "true," + env.localIP.String() + "," + time.Now().String()
-		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, booted, &client.SetOptions{PrevExist: client.PrevNoExist})
-		if err != nil {
-			//ignore exist error
-			if !etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
-				// check if exist need to add qurorum
-				env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" set by another node, error:", err)
-
-				resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
-				if err == nil {
-					env.logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, "Resp:", resp)
-				} else {
-					env.logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
-				}
-			} else {
-				env.logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" error:", err)
-			}
-		} else {
-			env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" ok:", booted, "Resp:", resp)
-		}
 	}
 
 	//this can not use goroutine, this is a loop
