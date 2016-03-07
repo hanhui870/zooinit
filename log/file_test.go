@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	stdlog "log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -47,6 +48,18 @@ func TestFileLoggerNormal(t *testing.T) {
 
 	//need time
 	testLookWrite(t, log)
+}
+
+func TestFileLoggerWrap(t *testing.T) {
+	log := GetFileLogger(GenerateFileLogPathName("test", "TestFileLoggerWrap"))
+	defer log.Sync()
+	if log.Flags()&stdlog.LUTC != 0 {
+		t.Log("log.Flags()&stdlog.LUTC is set")
+	} else {
+		t.Log("log.Flags()&stdlog.LUTC is not set")
+	}
+
+	log.Println("This is a helloworld from TestFileLoggerWrap.")
 }
 
 func echo(t *testing.T, args ...string) {
