@@ -405,7 +405,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 				resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, booted, &client.SetOptions{PrevExist: client.PrevNoExist})
 				if err != nil {
 					//ignore exist error
-					if !etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
+					if etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
 						// check if exist need to add qurorum
 						env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" set by another node, error:", err)
 
