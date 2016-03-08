@@ -503,7 +503,7 @@ func execHealthChechRunning(firstRun bool) (result bool) {
 	defer env.logger.Sync()
 
 	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
-	if firstRun {
+	if !firstRun {
 		// like exec health check, no need to debug env info every time.
 		callCmd.Env = append(callCmd.Env, "ZOOINIT_SILENT_ENV_INFO=true")
 	}
