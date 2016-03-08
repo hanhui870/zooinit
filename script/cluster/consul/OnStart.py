@@ -13,7 +13,7 @@ def run(info):
 
     args = ["consul", "agent",
             "-node=" + info.GetNodename(),
-            "-data-dir=/tmp/consul",
+            "-data-dir=/data/consul",
             "-bind=" + info.Localip,
             "-client=" + info.Localip]
 
