@@ -484,10 +484,8 @@ func watchDogRunning() {
 			break
 		}
 
-		callResult := execHealthChechRunning()
-		if callResult {
-			break
-		}
+		execHealthChechRunning()
+		//do not need break, because loop is maitained by zooinit
 
 		// sleep 1s
 		time.Sleep(CLUSTER_HEALTH_CHECK_INTERVAL)

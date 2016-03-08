@@ -243,7 +243,7 @@ func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
 
 func (e *envInfo) GetNodename() string {
 	if e == nil {
-		return 0
+		return ""
 	}
 
 	return e.clusterBackend + "-" + e.localIP.String()
