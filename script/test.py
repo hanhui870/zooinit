@@ -9,5 +9,6 @@ if __name__ == "__main__":
     os.environ["ZOOINIT_LOCAL_IP"] = "192.168.4.108"
     os.environ["ZOOINIT_MASTER_IP"] = "192.168.4.108"
     os.environ["ZOOINIT_QURORUM"] = "3"
+    # os.environ["ZOOINIT_SILENT_ENV_INFO"] = "True"
 
     main()

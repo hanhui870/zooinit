@@ -479,13 +479,18 @@ func watchDogRunning() {
 	}
 
 	//this can not use goroutine, this is a loop
+	firstRun := true
 	for {
 		if isExit, ok := exitApp.Load().(bool); ok && isExit {
 			break
 		}
 
-		execHealthChechRunning()
+		execHealthChechRunning(firstRun)
 		//do not need break, because loop is maitained by zooinit
+
+		if firstRun {
+			firstRun = false
+		}
 
 		// sleep 1s
 		time.Sleep(CLUSTER_HEALTH_CHECK_INTERVAL)
@@ -493,11 +498,16 @@ func watchDogRunning() {
 }
 
 // Check cluster health after cluster is up.
-func execHealthChechRunning() (result bool) {
+func execHealthChechRunning(firstRun bool) (result bool) {
 	//flush last log info
 	defer env.logger.Sync()
 
 	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
+	if firstRun {
+		// like exec health check, no need to debug env info every time.
+		callCmd.Env = append(callCmd.Env, "ZOOINIT_SILENT_ENV_INFO=true")
+	}
+
 	// may runtime error: invalid memory address or nil pointer dereference
 	defer func() {
 		if callCmd.Process != nil {
