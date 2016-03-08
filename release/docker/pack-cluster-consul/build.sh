@@ -55,7 +55,7 @@ mkdir $BinDir
 imageBuild="haimi:go-docker-dev"
 echo -e "Will build go program use docker container from image: "$imageBuild"..."
 docker run -v /Users/bruce/:/Users/bruce/ $imageBuild bash -c "go build -a -ldflags '-s' zooinit \
-    && mv zooinit /Users/bruce/project/godev/src/zooinit/release/docker/pack-cluster-consul/transfer/bin"
+    && mv zooinit /Users/bruce/project/godev/src/zooinit/release/docker/pack-${Cluster}/transfer/bin"
 
 
 echo -e "Will package go program into docker image...\nDir now:" `pwd`
