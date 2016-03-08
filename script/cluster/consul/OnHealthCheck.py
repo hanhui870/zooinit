@@ -33,7 +33,7 @@ def run(info):
             health = json.loads(con)
         else:
             health = []
-        print("Health info " + info.GetNodename() + ":", resp.status, resp.reason, health)
+        print("Health info " + info.GetNodename() + ":" + str(resp.status) + " " + str(resp.reason) + " " + str(health))
         if (len(health) > 0):
             healthinfo = health[0]
             if type(healthinfo) == type({}) and "Status" in healthinfo and healthinfo["Status"] == "passing":
