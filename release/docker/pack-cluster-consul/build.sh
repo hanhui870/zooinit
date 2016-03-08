@@ -61,9 +61,9 @@ docker run -v /Users/bruce/:/Users/bruce/ $imageBuild bash -c "go build -a -ldfl
 echo -e "Will package go program into docker image...\nDir now:" `pwd`
 
 #package code need no cache, because may change transfer files.
-docker build --no-cache -t haimi:zooinit-cluster-consul .
+docker build --no-cache -t haimi:zooinit-${Cluster} .
 
 if [ "$Debug" = "false" ]; then
-    docker tag -f haimi:zooinit-cluster-consul registry.alishui.com:5000/haimi:zooinit-cluster-consul
-    docker push registry.alishui.com:5000/haimi:zooinit-cluster-consul
+    docker tag -f haimi:zooinit-${Cluster} registry.alishui.com:5000/haimi:zooinit-${Cluster}
+    docker push registry.alishui.com:5000/haimi:zooinit-${Cluster}
 fi

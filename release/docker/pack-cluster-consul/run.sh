@@ -17,13 +17,15 @@ else :
     service=$2
 fi
 
+Cluster="cluster-consul"
+
 if [ "$Debug" = "true" ]; then
-    docker run -ti -P haimi:zooinit-cluster-consul zooinit cluster -b consul $service
+    docker run -ti -P haimi:zooinit-${Cluster} zooinit cluster -b consul $service
 
 else :
-    docker pull registry.alishui.com:5000/haimi:zooinit-cluster-consul
-    docker tag -f registry.alishui.com:5000/haimi:zooinit-cluster-consul haimi:zooinit-cluster-consul
+    docker pull registry.alishui.com:5000/haimi:zooinit-${Cluster}
+    docker tag -f registry.alishui.com:5000/haimi:zooinit-${Cluster} haimi:zooinit-${Cluster}
 
     # Use -P can expose ports to outside machine for client access.
-    docker run -d -P haimi:zooinit-cluster-consul zooinit cluster -b consul $service
+    docker run -d -P haimi:zooinit-${Cluster} zooinit cluster -b consul $service
 fi
