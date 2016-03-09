@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ZK_HOST = "192.168.99.100:32908"
+	ZK_HOST = "192.168.99.100:33064"
 )
 
 func TestCreateSignal(t *testing.T) {
