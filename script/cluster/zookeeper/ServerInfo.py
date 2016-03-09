@@ -10,6 +10,8 @@ class ServerInfo(Info):
 
     ServerIDAdd = 1
 
+    ClientPort = 2181
+
     def __init__(self, event, service, backend, iplist, localip, masterip, qurorum):
         Info.__init__(self, event, service, backend, iplist, localip, masterip, qurorum)
 
@@ -31,6 +33,12 @@ class ServerInfo(Info):
 
         return 0
 
+    def GetLocalClientURL(self):
+        return self.Localip + ":2181"
+
+    def GetAllClientURL(self):
+        pass
+
 
 if __name__ == "__main__":
     info = ServerInfo("OnStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "3")
@@ -38,10 +46,10 @@ if __name__ == "__main__":
     print(info.GetIPListArray())
     print(info.CheckLocalIp())
     if info.GetServiceUrl(8500) != "192.168.1.2:8500":
-        print("Error: info.GetServiceUrl(8500)!=http://192.168.1.2:8500")
+        print("Error: info.GetServiceUrl(8500)!=192.168.1.2:8500")
 
-    if info.GetNodename() != "Consul-192.168.1.2":
-        print("Error: info.GetNodename() != Consul-192.168.1.2")
+    if info.GetNodename() != "Etcd-192.168.1.2":
+        print("Error: info.GetNodename() != Etcd-192.168.1.2")
 
     if info.GetMyID() != 2:
         print("info.GetMyID() found error", info.GetMyID())
@@ -67,10 +75,12 @@ if __name__ == "__main__":
     print(info.CheckLocalIp())
     print(info.GetServerList())
     if info.GetServiceUrl(8500) != "192.168.1.2:8500":
-        print("Error: info.GetServiceUrl(8500)!=http://192.168.1.2:8500")
+        print("Error: info.GetServiceUrl(8500)!=192.168.1.2:8500")
 
-    if info.GetNodename() != "Consul-192.168.1.2":
-        print("Error: info.GetNodename() != Consul-192.168.1.2")
+    if info.GetServiceUrl(info.ClientPort) != "192.168.1.2:2181":
+        print("Error: info.GetServiceUrl(2181)!=192.168.1.2:2181")
+    if info.GetNodename() != "Etcd-192.168.1.2":
+        print("Error: info.GetNodename() != Etcd-192.168.1.2")
 
     if info.GetMyID() != 2:
         print("info.GetMyID() found error", info.GetMyID())

@@ -40,7 +40,7 @@ if __name__ == "__main__":
     print(info.GetIPListArray())
     print(info.CheckLocalIp())
     if info.GetServiceUrl(8500) != "192.168.1.2:8500":
-        print("Error: info.GetServiceUrl(8500)!=http://192.168.1.2:8500")
+        print("Error: info.GetServiceUrl(8500)!=192.168.1.2:8500")
 
     print("info.GetNodename():", info.GetNodename())
     if info.GetNodename() != "Etcd-192.168.1.2":
