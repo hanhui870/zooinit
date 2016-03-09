@@ -22,9 +22,10 @@ import (
 )
 
 const (
-	CONFIG_SECTION                = "system.cluster"
-	CLUSTER_BOOTSTRAP_TIMEOUT     = 5 * time.Minute
-	CLUSTER_HEALTH_CHECK_INTERVAL = 1 * time.Second
+	CONFIG_SECTION            = "system.cluster"
+	CLUSTER_BOOTSTRAP_TIMEOUT = 5 * time.Minute
+	//change to 2, zookeeper default is 2 sec.
+	CLUSTER_HEALTH_CHECK_INTERVAL = 2 * time.Second
 
 	// 1. consul/config/size qurorum大小
 	// 2. consul/election/ 候选人选举目录，CreateInOrder
@@ -37,8 +38,8 @@ const (
 	CLUSTER_SELECTION_DIR     = "/election"
 	// 6. check health update this
 	CLUSTER_MEMBER_DIR = "/members"
-	// member node ttl, change to 2, zookeeper default is 2 sec.
-	CLUSTER_MEMBER_NODE_TTL = 2 * time.Minute
+	// member node ttl
+	CLUSTER_MEMBER_NODE_TTL = 1 * time.Minute
 )
 
 var (
