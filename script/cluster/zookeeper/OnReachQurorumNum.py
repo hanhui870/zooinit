@@ -5,6 +5,7 @@ import time
 from cluster.info import Info
 from cluster.zookeeper.ServerInfo import ServerInfo, GetServerInfo
 from subcall import runcmd
+from pathlib import Path
 
 
 # rend zookeeper config file
@@ -19,13 +20,27 @@ def run(info):
 
     zooinfo = GetServerInfo(info)
 
-    idfile = open(idPath, "w")
+    # Render myid path
+    p = Path(idPath)
+    if (p.exists() != True):
+        pa = Path(p.parent)
+        if pa.exists() != True:
+            pa.mkdir(mode=0o755, parents=True)
+            p.touch(mode=0o664)
+    idfile = p.open("w")
     length = idfile.write(str(zooinfo.GetMyID()))
     if (length != len(str(zooinfo.GetMyID()))):
         print("Write server idfile error, length not equal to zooinfo.GetMyID()")
         sys.exit(1)
 
-    cfgfile = open(cfgPath, "w")
+    # Render cfg file path
+    p = Path(cfgPath)
+    if (p.exists() != True):
+        pa = Path(p.parent)
+        if pa.exists() != True:
+            pa.mkdir(mode=0o755, parents=True)
+            p.touch(mode=0o664)
+    cfgfile = p.open("w")
     length = cfgfile.write(RenderTPL(zooinfo, dataDir))
     if (length != len(RenderTPL(zooinfo, dataDir))):
         print("Write server cfgFile error, length not equal to zooinfo.GetServerList()")
@@ -75,6 +90,18 @@ autopurge.purgeInterval=1
 # ImportError: No module named cluster.utils
 # see readme.md set PYTHONPATH
 if __name__ == "__main__":
+    p = Path("/Users/bruce/tmp/test/noexist/hello/world")
+    print("Parent of path:", p.parent)
+    pa = Path(p.parent)
+    if p.exists():
+        pa.rmdir()
+    if (p.exists() != True):
+        pa.mkdir(mode=0o755, parents=True)
+        p.touch(mode=0o664)
+
+    f = p.open("w")
+    f.write("hello world")
+
     # Create from info
     print("Test Create from info...")
     infoInst = Info("OnStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "2")
@@ -83,8 +110,8 @@ if __name__ == "__main__":
     if info.GetServiceUrl(8500) != "192.168.1.2:8500":
         print("Error: info.GetServiceUrl(8500)!=http://192.168.1.2:8500")
 
-    if info.GetNodename() != "Consul-192.168.1.2":
-        print("Error: info.GetNodename() != Consul-192.168.1.2")
+    if info.GetNodename() != "Etcd-192.168.1.2":
+        print("Error: info.GetNodename() != Etcd-192.168.1.2")
 
     if info.GetMyID() != 2:
         print("info.GetMyID() found error", info.GetMyID())

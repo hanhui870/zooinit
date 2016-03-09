@@ -17,14 +17,14 @@ func main() {
 	clientip := os.Args[1]
 	zkc, _, err := zk.Connect([]string{clientip}, time.Second)
 	if err != nil {
-		fmt.Println("Connect returned error: %+v", err)
+		fmt.Println("Connect returned error:", err)
 		os.Exit(1)
 	}
 
 	tryPath := "/zookeeper"
 	_, stat, err := zkc.Get(tryPath)
 	if err != nil {
-		fmt.Println("Get returned error: %+v", err)
+		fmt.Println("Get returned error:", err)
 		os.Exit(1)
 	} else if stat == nil {
 		fmt.Println("Get returned nil stat")
