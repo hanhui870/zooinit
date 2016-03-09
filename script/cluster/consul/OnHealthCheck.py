@@ -40,11 +40,14 @@ def run(info):
                 print("Node " + info.GetNodename() + " health status check passing")
             else:
                 print("Node health check failed.")
+                sys.exit(1)
         else:
             print("Node health info empty.")
+            sys.exit(1)
 
     except Exception as err:
         print("Found error:" + str(err) + " while health check, continue loop...")
+        sys.exit(1)
 
 
 

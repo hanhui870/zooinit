@@ -23,11 +23,12 @@ def run(info):
             args = ["OnHealthCheck", zooinfo.GetLocalClientURL()]
 
             proc = runcmd.runWithStdoutSync(args)
-            proc.wait()
 
-            print("Zookeeper Cluster is up now.")
-            # IF error found, will trigger Exception
-            break
+            if proc.returncode == 0:
+                print("Zookeeper Cluster is up now.")
+                break
+            else:
+                print("Zookeeper Cluster checks up failed.")
 
         except Exception as err:
             print("Found error:" + str(err) + " while health check, continue loop...")

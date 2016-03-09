@@ -18,13 +18,15 @@ def run(info):
         args = ["OnHealthCheck", zooinfo.GetLocalClientURL()]
 
         proc = runcmd.runWithStdoutSync(args)
-        proc.wait()
-
-        print("Zookeeper Cluster is healthy.")
-        # IF error found, will trigger Exception
+        if proc.returncode == 0:
+            print("Zookeeper Cluster is up now.")
+        else:
+            print("Zookeeper Cluster checks up failed.")
+            sys.exit(1)
 
     except Exception as err:
         print("Found error:" + str(err) + " while health check, continue loop...")
+        sys.exit(1)
 
 
 # ImportError: No module named cluster.utils
