@@ -51,7 +51,7 @@ syncLimit=5
 # example sakes.
 dataDir={dataDir}
 # the port at which the clients will connect
-clientPort=2181
+clientPort={clientPort}
 # the maximum number of client connections.
 # increase this if you need to handle more clients
 #maxClientCnxns=60
@@ -70,7 +70,7 @@ autopurge.purgeInterval=1
 {serverlist}
 '''
 
-    return tpl.format(dataDir=dataDir, serverlist=info.GetServerList())
+    return tpl.format(dataDir=dataDir, serverlist=info.GetServerList(), clientPort=info.ClientPort)
 
 # ImportError: No module named cluster.utils
 # see readme.md set PYTHONPATH
@@ -89,6 +89,7 @@ if __name__ == "__main__":
     if info.GetMyID() != 2:
         print("info.GetMyID() found error", info.GetMyID())
 
-    run(infoInst)
 
     print(RenderTPL(info, "/data/zookeeper/data"))
+
+    # run(infoInst)
