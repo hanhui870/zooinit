@@ -20,12 +20,11 @@ def runWithStdoutSync(args):
                     if line != "":
                         print(line)
                 else:
-                    print("End of stdout, will break out loop...")
+                    # print("End of stdout, will break out loop...")
                     break
 
-                    # No need.
-                    # proc.wait()
-
+        proc.wait()
+        #print("Exit code:"+str(proc.returncode))
         return proc
 
     except subprocess.CalledProcessError as err:
