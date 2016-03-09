@@ -1,25 +1,22 @@
-#构建命令：docker build --no-cache -t zooinit-cluster-consul .
+#构建命令：docker build --no-cache -t zooinit-cluster-zookeeper .
 #run:
 #version: 0.1.0
-#version: 0.1.0 zooinit+etcd package
+#构建命令：docker build -t haimi:zookeeper .
+#version: 0.1.0
+#version: 0.1.0 基于HAIMI_ZOOKEEPER_DIST，410M。
+FROM haimi:zookeeper
 
-#need python, can't scratch
-FROM haimi:base
-
-MAINTAINER bruce@haimi.com
+#MAINTAINER bruce@haimi.com
 
 ENV PATH=$PATH:/server/zooinit/bin
 
 ADD transfer/ /server/zooinit/
 
-#golang 安装，通过拓展PATH实现。
-#20160303 need to take care of ADD order, may overwirte this.
-RUN curl -o consul http://docker.alishui.com/consul && chmod a+x ./consul && mv consul /server/zooinit/bin
-
-VOLUME ["/data"]
-
 #script path need under work dir
 WORKDIR /server/zooinit/
 
-EXPOSE 8300 8301 8301/udp 8302 8302/udp 8400 8500 8600 8600/udp
+VOLUME ["/data"]
+
 ENTRYPOINT ["/server/zooinit/entrypoint.sh"]
+
+
