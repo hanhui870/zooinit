@@ -167,7 +167,7 @@ func initializeClusterDiscoveryInfo() {
 	// Call script
 	if env.eventOnPreRegist != "" {
 		callCmd := getCallCmdInstance("OnPreRegist: ", env.eventOnPreRegist)
-		cmdCallWaitProcess(callCmd)
+		cmdCallWaitProcessSync(callCmd)
 	}
 
 	// Create qurorum in order node
@@ -180,7 +180,7 @@ func initializeClusterDiscoveryInfo() {
 		// Call script
 		if env.eventOnPostRegist != "" {
 			callCmd := getCallCmdInstance("OnPostRegist: ", env.eventOnPostRegist)
-			cmdCallWaitProcess(callCmd)
+			cmdCallWaitProcessSync(callCmd)
 		}
 	}
 
@@ -280,7 +280,7 @@ func loopUntilQurorumIsReached() {
 				// Call script
 				if env.eventOnReachQurorumNum != "" {
 					callCmd := getCallCmdInstance("OnReachQurorumNum: ", env.eventOnReachQurorumNum)
-					cmdCallWaitProcess(callCmd)
+					cmdCallWaitProcessSync(callCmd)
 				}
 				break
 			}
@@ -298,13 +298,13 @@ func bootstrapLocalClusterMember() {
 		env.logger.Fatalln("BootstrapLocalClusterMember error, localip is not in the elected list.")
 	}
 
-	// Call script
+	// Call script block
 	if env.eventOnPreStart != "" {
 		callCmd := getCallCmdInstance("OnPreStart: ", env.eventOnPreStart)
-		cmdCallWaitProcess(callCmd)
+		cmdCallWaitProcessSync(callCmd)
 	}
 
-	// Call script
+	// Call script, non block
 	callCmd := getCallCmdInstance("OnStart: ", env.eventOnStart)
 	err := callCmd.Start()
 	if err != nil {
@@ -330,7 +330,8 @@ func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
 	return callCmd
 }
 
-func cmdCallWaitProcess(callCmd *exec.Cmd) {
+// Async wait by WaitGroup
+func cmdCallWaitProcessAsync(callCmd *exec.Cmd) {
 	cmdWaitGroup.Add(1)
 	go func() {
 		defer cmdWaitGroup.Done()
@@ -340,6 +341,21 @@ func cmdCallWaitProcess(callCmd *exec.Cmd) {
 		}
 		callCmd.Wait()
 	}()
+}
+
+// Sync block wait
+func cmdCallWaitProcessSync(callCmd *exec.Cmd) {
+	defer func() {
+		if callCmd.Process != nil {
+			callCmd.Process.Kill()
+		}
+	}()
+
+	err := callCmd.Start()
+	if err != nil {
+		env.logger.Println("callCmd.Start() error found:", err)
+	}
+	callCmd.Wait()
 }
 
 func getCallCmdENVSet(event string) []string {
@@ -509,17 +525,7 @@ func execHealthChechRunning(firstRun bool) (result bool) {
 	}
 
 	// may runtime error: invalid memory address or nil pointer dereference
-	defer func() {
-		if callCmd.Process != nil {
-			callCmd.Process.Kill()
-		}
-	}()
-
-	err := callCmd.Start()
-	if err != nil {
-		env.logger.Println("callCmd.Start() execHealthChechRunning error found:", err)
-	}
-	callCmd.Wait()
+	cmdCallWaitProcessSync(callCmd)
 
 	var cm *ClusterMember
 	// ttl 1min, update 1/s
