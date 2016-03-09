@@ -34,10 +34,17 @@ class ServerInfo(Info):
         return 0
 
     def GetLocalClientURL(self):
-        return self.Localip + ":2181"
+        return self.GetServiceUrl(self.ClientPort)
 
     def GetAllClientURL(self):
-        pass
+        list = []
+
+        IPList = self.GetIPListArray()
+        for ip in IPList:
+            # start from 1
+            list.append(ip + ":" + str(self.ClientPort))
+
+        return list
 
 
 if __name__ == "__main__":
@@ -79,8 +86,15 @@ if __name__ == "__main__":
 
     if info.GetServiceUrl(info.ClientPort) != "192.168.1.2:2181":
         print("Error: info.GetServiceUrl(2181)!=192.168.1.2:2181")
+
+    if info.GetLocalClientURL() != "192.168.1.2:2181":
+        print("Error: info.GetLocalClientURL()!=192.168.1.2:2181")
     if info.GetNodename() != "Etcd-192.168.1.2":
         print("Error: info.GetNodename() != Etcd-192.168.1.2")
 
     if info.GetMyID() != 2:
         print("info.GetMyID() found error", info.GetMyID())
+
+    print("Client urls:", info.GetAllClientURL())
+    if (info.GetAllClientURL() != ['192.168.1.1:2181', '192.168.1.2:2181']):
+        print("Client urls: info.GetAllClientURL()", info.GetAllClientURL())
