@@ -15,7 +15,7 @@ def runWithStdoutSync(args):
         with proc.stdout as out:
             while True:
                 line = out.readline()
-                if line != "":
+                if line != b"":
                     line = line.strip().decode("UTF-8")
                     if line != "":
                         print(line)
@@ -25,6 +25,8 @@ def runWithStdoutSync(args):
 
                     # No need.
                     # proc.wait()
+
+        return proc
 
     except subprocess.CalledProcessError as err:
         print("Found CalledProcessError:", err, err.output)
