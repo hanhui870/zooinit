@@ -37,8 +37,8 @@ const (
 	CLUSTER_SELECTION_DIR     = "/election"
 	// 6. check health update this
 	CLUSTER_MEMBER_DIR = "/members"
-	// member node ttl
-	CLUSTER_MEMBER_NODE_TTL = 1 * time.Minute
+	// member node ttl, change to 2, zookeeper default is 2 sec.
+	CLUSTER_MEMBER_NODE_TTL = 2 * time.Minute
 )
 
 var (
