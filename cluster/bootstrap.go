@@ -509,8 +509,8 @@ func watchDogRunning() {
 			firstRun = false
 		}
 
-		// sleep 1s
-		time.Sleep(CLUSTER_HEALTH_CHECK_INTERVAL)
+		// sleep interval time
+		time.Sleep(env.healthCheckInterval)
 	}
 }
 

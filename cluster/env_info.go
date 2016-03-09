@@ -41,6 +41,9 @@ type envInfo struct {
 	// Ip hint use to found which ip for boot bind
 	iphint string
 
+	// Health check interval, default 2 sec, same to zookeeper ticktime.
+	healthCheckInterval time.Duration
+
 	// boot event related
 	eventOnPreRegist       string
 	eventOnPostRegist      string
@@ -130,6 +133,19 @@ func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
 		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
 	} else {
 		obj.timeout = time.Duration(int(timeout * 1000000000))
+	}
+
+	checkInterval, err := sec.Key("health.check.interval").Float64()
+	if err != nil {
+		obj.logger.Fatalln("Config of health.check.interval is error:", err)
+	}
+	if checkInterval > 60 || checkInterval < 1 {
+		obj.logger.Fatalln("Config of health.check.interval must be between 1-60 sec.")
+	}
+	if checkInterval == 0 {
+		obj.healthCheckInterval = CLUSTER_HEALTH_CHECK_INTERVAL
+	} else {
+		obj.healthCheckInterval = time.Duration(int(checkInterval * 1000000000))
 	}
 
 	// Event process
