@@ -17,6 +17,20 @@ def run(info):
     dataDir = "/data/zookeeper/data"
     idPath = dataDir + "/myid"
 
+    zooinfo = GetServerInfo(info)
+
+    idfile = open(idPath, "w")
+    length = idfile.write(str(zooinfo.GetMyID()))
+    if (length != len(str(zooinfo.GetMyID()))):
+        print("Write server idfile error, length not equal to zooinfo.GetMyID()")
+        sys.exit(1)
+
+    cfgfile = open(cfgPath, "w")
+    length = cfgfile.write(RenderTPL(zooinfo, dataDir))
+    if (length != len(RenderTPL(zooinfo, dataDir))):
+        print("Write server cfgFile error, length not equal to zooinfo.GetServerList()")
+        sys.exit(1)
+
 
 def RenderTPL(info, dataDir):
     if info.Qurorum != str(len(info.GetIPListArray())):
@@ -74,5 +88,7 @@ if __name__ == "__main__":
 
     if info.GetMyID() != 2:
         print("info.GetMyID() found error", info.GetMyID())
+
+    run(infoInst)
 
     print(RenderTPL(info, "/data/zookeeper/data"))
