@@ -19,9 +19,9 @@ def run(info):
 
         proc = runcmd.runWithStdoutSync(args)
         if proc.returncode == 0:
-            print("Zookeeper Cluster is up now.")
+            print("Zookeeper Cluster is healthy.")
         else:
-            print("Zookeeper Cluster checks up failed.")
+            print("Zookeeper Cluster is NOT healthy.")
             sys.exit(1)
 
     except Exception as err:
