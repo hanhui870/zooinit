@@ -4,12 +4,12 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
-	"reflect"
 )
 
 const (
@@ -34,9 +34,22 @@ type ApiStats struct {
 	client client.Client
 }
 
+var (
+	clientCache map[string]client.Client
+)
+
+func init() {
+	clientCache = make(map[string]client.Client)
+}
+
 // Stat can't use this method, Struct mismatch
-//TODO Can't Create every call, will trigger goroutine member leak, need connection pool or similar tech
+// TODO Can't Create every call, will trigger goroutine member leak, need connection pool or similar tech
 func NewClient(endpoints []string) (client.Client, error) {
+	key := strings.Join(endpoints, ",")
+	if cc, ok := clientCache[key]; ok {
+		return cc, nil
+	}
+
 	var transport client.CancelableTransport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		Dial: (&net.Dialer{
@@ -53,7 +66,12 @@ func NewClient(endpoints []string) (client.Client, error) {
 		HeaderTimeoutPerRequest: time.Second,
 	}
 
-	return client.New(cfg)
+	clientNew, err := client.New(cfg)
+	if err != nil {
+		clientCache[key] = clientNew
+	}
+
+	return clientNew, err
 }
 
 // Stat can't use this method, Struct mismatch
