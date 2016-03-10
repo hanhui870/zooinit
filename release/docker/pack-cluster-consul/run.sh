@@ -5,6 +5,8 @@
 
 set -e
 
+source ../Constant.rc
+
 if [ "$1" = "-d" ]; then
     Debug="true"
 else :
@@ -23,8 +25,8 @@ if [ "$Debug" = "true" ]; then
     docker run -ti -P haimi:zooinit-${Cluster} zooinit cluster -b consul $service
 
 else :
-    docker pull registry.alishui.com:5000/haimi:zooinit-${Cluster}
-    docker tag -f registry.alishui.com:5000/haimi:zooinit-${Cluster} haimi:zooinit-${Cluster}
+    docker pull ${Registry}/haimi:zooinit-${Cluster}
+    docker tag -f ${Registry}/haimi:zooinit-${Cluster} haimi:zooinit-${Cluster}
 
     # Use -P can expose ports to outside machine for client access.
     docker run -d -P haimi:zooinit-${Cluster} zooinit cluster -b consul $service

@@ -2,7 +2,20 @@
 
 set -e
 
-docker pull registry.alishui.com:5000/haimi:zooinit-bootstrap
-docker tag -f registry.alishui.com:5000/haimi:zooinit-bootstrap haimi:zooinit-bootstrap
+source ../Constant.rc
 
-docker run -d --net=host haimi:zooinit-bootstrap zooinit boot
+if [ "$1" = "-d" ]; then
+    Debug="true"
+else :
+    Debug="false"
+fi
+
+if [ "$Debug" = "true" ]; then
+    docker run -ti -P haimi:zooinit-bootstrap zooinit boot
+
+else :
+    docker pull ${Registry}/haimi:zooinit-bootstrap
+    docker tag -f ${Registry}/haimi:zooinit-bootstrap haimi:zooinit-bootstrap
+
+    docker run -d --net=host haimi:zooinit-bootstrap zooinit boot
+fi

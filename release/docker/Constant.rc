@@ -1,0 +1,11 @@
+# docker 下载地址
+Registry=registry.alishui.com:5000
+
+# docker 构建需要映射的目录
+VolumePath=/Users/bruce/
+
+# 工程目录
+ProjectPath=/Users/bruce/project/godev/src/zooinit
+
+# Go语言的docker构建镜像
+ImageBuild="haimi:go-docker-dev"

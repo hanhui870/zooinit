@@ -4,6 +4,8 @@
 
 set -e
 
+source ../Constant.rc
+
 if [ "$1" = "-d" ]; then
     Debug="true"
 else :
@@ -52,10 +54,9 @@ fi
 echo "Create new bin dir..."
 mkdir $BinDir
 
-imageBuild="haimi:go-docker-dev"
-echo -e "Will build go program use docker container from image: "$imageBuild"..."
-docker run -v /Users/bruce/:/Users/bruce/ $imageBuild bash -c "go build -a -ldflags '-s' zooinit \
-    && mv zooinit /Users/bruce/project/godev/src/zooinit/release/docker/pack-${Cluster}/transfer/bin"
+echo -e "Will build go program use docker container from image: "$ImageBuild"..."
+docker run -v ${VolumePath}:${VolumePath} $ImageBuild bash -c "go build -a -ldflags '-s' zooinit \
+    && mv zooinit ${ProjectPath}/release/docker/pack-${Cluster}/transfer/bin"
 
 
 echo -e "Will package go program into docker image...\nDir now:" `pwd`
@@ -64,6 +65,6 @@ echo -e "Will package go program into docker image...\nDir now:" `pwd`
 docker build --no-cache -t haimi:zooinit-${Cluster} .
 
 if [ "$Debug" = "false" ]; then
-    docker tag -f haimi:zooinit-${Cluster} registry.alishui.com:5000/haimi:zooinit-${Cluster}
-    docker push registry.alishui.com:5000/haimi:zooinit-${Cluster}
+    docker tag -f haimi:zooinit-${Cluster} ${Registry}/haimi:zooinit-${Cluster}
+    docker push ${Registry}/haimi:zooinit-${Cluster}
 fi
