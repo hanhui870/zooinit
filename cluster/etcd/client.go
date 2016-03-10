@@ -35,6 +35,7 @@ type ApiStats struct {
 }
 
 // Stat can't use this method, Struct mismatch
+//TODO Can't Create every call, will trigger goroutine member leak, need connection pool or similar tech
 func NewClient(endpoints []string) (client.Client, error) {
 	var transport client.CancelableTransport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
