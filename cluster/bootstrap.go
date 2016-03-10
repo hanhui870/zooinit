@@ -462,12 +462,12 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 func updateDiscoveryTTL() {
 	//flush last log info
 	defer env.logger.Sync()
-
-	kvApi := getClientKeysApi()
 	rand.Seed(time.Now().UnixNano())
 
 	//30-59s 随机更新一次,所有节点都会更新
 	for {
+		kvApi := getClientKeysApi()
+
 		// Update TTL
 		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: env.timeout, PrevExist: client.PrevExist})
 		if err != nil {
@@ -555,9 +555,8 @@ func watchQurorumSize() {
 	//flush last log info
 	defer env.logger.Sync()
 
-	kvApi := getClientKeysApi()
-
 	for {
+		kvApi := getClientKeysApi()
 		watch := kvApi.Conn().Watcher(env.discoveryPath+CLUSTER_CONFIG_DIR_SIZE, &client.WatcherOptions{AfterIndex: qurorumWatchIndex})
 		resp, err := watch.Next(etcd.Context())
 
