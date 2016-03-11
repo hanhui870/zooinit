@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"encoding/json"
+	"os"
 	"time"
 )
 
@@ -17,14 +18,15 @@ type ServiceCheck interface {
 }
 
 type ClusterMember struct {
-	Name    string `json:"name"`
-	Update  string `json:"update"`
-	Localip string `json:"localip"`
-	State   bool   `json:"state"`
+	Name     string `json:"name"`
+	Update   string `json:"update"`
+	Localip  string `json:"localip"`
+	Hostname string `json:"hostname"`
+	State    bool   `json:"state"`
 }
 
 func NewClusterMember(Name, Localip string, State bool) *ClusterMember {
-	return &ClusterMember{Name: Name, Localip: Localip, State: State, Update: time.Now().Format(time.RFC3339)}
+	return &ClusterMember{Name: Name, Localip: Localip, State: State, Update: time.Now().Format(time.RFC3339), Hostname: os.Getenv("HOSTNAME")}
 }
 
 func (m *ClusterMember) ToJson() string {
