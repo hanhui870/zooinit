@@ -6,7 +6,7 @@
 #need python, can't scratch
 FROM haimi:base
 
-MAINTAINER bruce@haimi.com
+#MAINTAINER bruce@haimi.com
 
 WORKDIR /server/zooinit/
 

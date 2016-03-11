@@ -53,9 +53,10 @@ type envInfo struct {
 	logger *loglocal.BufferedFileLogger
 
 	// boot command
-	cmd        string
-	cmdDataDir string
-	cmdWalDir  string
+	cmd          string
+	cmdDataDir   string
+	cmdWalDir    string
+	cmdSnapCount int
 }
 
 // New env from file
@@ -158,6 +159,16 @@ func NewEnvInfo(iniobj *ini.File) *envInfo {
 		obj.logger.Fatalln("Config of boot.wal.dir is empty.")
 	}
 	obj.cmdWalDir = path
+
+	snapCount, err := sec.Key("boot.snap.count").Float64()
+	if err != nil {
+		obj.logger.Fatalln("Config of etcd boot.snap.count is error:", err)
+	}
+	if snapCount > 100000 || snapCount < 100 {
+		obj.logger.Fatalln("Config of etcd boot.snap.count must between 100-100000")
+	} else {
+		obj.cmdSnapCount = int(snapCount)
+	}
 
 	// Init Extra runtime info
 	if utility.HasIpAddress(obj.internalHost) {
