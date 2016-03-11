@@ -67,7 +67,8 @@ func NewClient(endpoints []string) (client.Client, error) {
 	}
 
 	clientNew, err := client.New(cfg)
-	if err != nil {
+	//03.11 Bug the client state is ok
+	if err == nil {
 		clientCache[key] = clientNew
 	}
 
