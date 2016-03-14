@@ -1,4 +1,4 @@
-#构建命令：docker build --no-cache -t zooinit-cluster-zookeeper-test .
+#构建命令：docker build --no-cache -t zooinit-cluster-zookeeper-testcluster .
 #run:
 #version: 0.1.0
 #构建命令：docker build -t haimi:zookeeper .

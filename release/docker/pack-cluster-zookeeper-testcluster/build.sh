@@ -22,7 +22,7 @@ cd "../compiler"
 sh -c "./build.sh"
 
 #package go program return dir now
-Cluster="cluster-zookeeper-test"
+Cluster="cluster-zookeeper-testcluster"
 cd "../pack-"$Cluster
 echo "Dir now:" `pwd`
 
