@@ -19,7 +19,7 @@ else :
     service=$2
 fi
 
-Cluster="cluster-zookeepe-testcluster"
+Cluster="cluster-zookeeper-testcluster"
 
 if [ "$Debug" = "true" ]; then
     docker run -ti -P --net=host haimi:zooinit-${Cluster} zooinit cluster -b zookeeper $service
