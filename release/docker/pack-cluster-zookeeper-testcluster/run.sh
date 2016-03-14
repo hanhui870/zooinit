@@ -29,5 +29,5 @@ else :
     docker tag -f ${Registry}/haimi:zooinit-${Cluster} haimi:zooinit-${Cluster}
 
     # Use -P can expose ports to outside machine for client access.
-    docker run -d -P haimi:zooinit-${Cluster} zooinit cluster -b zookeeper $service
+    docker run -d -P --net=host haimi:zooinit-${Cluster} zooinit cluster -b zookeeper $service
 fi
