@@ -78,6 +78,11 @@ var (
 	execCheckFailedTimes int
 )
 
+func init() {
+	// init channel
+	restartMemberChannel = make(chan int)
+}
+
 // Zooinit app runtime main line
 func Bootstrap(c *cli.Context) {
 	fname := config.GetConfigFileName(c.String("config"))
@@ -327,8 +332,9 @@ func bootstrapLocalClusterMember() {
 	}
 
 	// block until cluster is up
-	// no need wait group, need to termiate
+	cmdWaitGroup.Add(1)
 	go func() {
+		defer cmdWaitGroup.Done()
 		err = callCmdStartInstance.Wait()
 		if err != nil {
 			env.logger.Println("callCmd.Wait() finished with error found:", err)
@@ -525,6 +531,7 @@ func watchDogRunning() {
 	firstRun := true
 	for {
 		if isExit, ok := exitApp.Load().(bool); ok && isExit {
+			env.logger.Println("Receive exitApp signal, break watchDogRunning loop.")
 			break
 		}
 
@@ -678,32 +685,36 @@ func clusterMemberRestartRoutine() {
 	//flush last log info
 	defer env.logger.Sync()
 
-	select {
-	case trigger := <-restartMemberChannel:
-		if trigger == MEMBER_RESTART_CMDWAIT {
-			env.logger.Println("exec restartMemberChannel MEMBER_RESTART_CMDWAIT...")
+	for {
+		select {
+		case trigger := <-restartMemberChannel:
+			if trigger == MEMBER_RESTART_CMDWAIT {
+				env.logger.Println("exec restartMemberChannel MEMBER_RESTART_CMDWAIT...")
+				// need to reset execCheckFailedTimes
+				execCheckFailedTimes = 0
 
-		} else if trigger == MEMBER_RESTART_HEALTHCHECK {
-			env.logger.Println("exec restartMemberChannel MEMBER_RESTART_HEALTHCHECK...")
-			if callCmdStartInstance.Process != nil {
-				env.logger.Println("Kill old process runtime, pid:", callCmdStartInstance.Process.Pid)
-				callCmdStartInstance.Process.Kill()
+			} else if trigger == MEMBER_RESTART_HEALTHCHECK {
+				env.logger.Println("exec restartMemberChannel MEMBER_RESTART_HEALTHCHECK...")
+				if callCmdStartInstance.Process != nil {
+					env.logger.Println("Kill old process runtime, pid:", callCmdStartInstance.Process.Pid)
+					callCmdStartInstance.Process.Kill()
+				}
+
+			} else {
+				env.logger.Println("Fetch error restartMemberChannel value:", trigger)
 			}
 
-		} else {
-			env.logger.Println("Fetch error restartMemberChannel value:", trigger)
-		}
+			if callCmdStartInstance.ProcessState != nil &&
+				(callCmdStartInstance.ProcessState.Exited() || callCmdStartInstance.ProcessState.Success()) {
 
-		if callCmdStartInstance.ProcessState != nil &&
-			(callCmdStartInstance.ProcessState.Exited() || callCmdStartInstance.ProcessState.Success()) {
-
-			bootstrapLocalClusterMember()
-		} else {
-
-			if callCmdStartInstance.ProcessState == nil {
-				env.logger.Println("Exception: callCmdStartInstance.ProcessState is nil.")
+				bootstrapLocalClusterMember()
 			} else {
-				env.logger.Println("Exception: callCmdStartInstance.ProcessState is:", callCmdStartInstance.ProcessState.String())
+
+				if callCmdStartInstance.ProcessState == nil {
+					env.logger.Println("Exception: callCmdStartInstance.ProcessState is nil.")
+				} else {
+					env.logger.Println("Exception: callCmdStartInstance.ProcessState is:", callCmdStartInstance.ProcessState.String())
+				}
 			}
 		}
 	}
