@@ -40,6 +40,12 @@ const (
 	CLUSTER_MEMBER_DIR = "/members"
 	// member node ttl
 	CLUSTER_MEMBER_NODE_TTL = 1 * time.Minute
+
+	//Cluster member restart channel value type
+	MEMBER_RESTART_CMDWAIT     = 1
+	MEMBER_RESTART_HEALTHCHECK = 2
+	//Max failed will triger a restart cmd
+	MEMBER_MAX_FAILED_TIMES = 10
 )
 
 var (
@@ -65,6 +71,11 @@ var (
 	clusterUpdated bool
 	// Is terminate the app
 	exitApp atomic.Value
+
+	callCmdStartInstance *exec.Cmd
+	// Restart cluster member channel
+	restartMemberChannel chan int
+	execCheckFailedTimes int
 )
 
 // Zooinit app runtime main line
@@ -116,6 +127,8 @@ func Bootstrap(c *cli.Context) {
 
 	// watch and check cluster health [watchdog], block until server receive term signal
 	watchDogRunning()
+
+	go clusterMemberRestartRoutine()
 
 	// final wait.
 	cmdWaitGroup.Wait()
@@ -306,15 +319,27 @@ func bootstrapLocalClusterMember() {
 	}
 
 	// Call script, non block
-	callCmd := getCallCmdInstance("OnStart: ", env.eventOnStart)
-	err := callCmd.Start()
+	callCmdStartInstance = getCallCmdInstance("OnStart: ", env.eventOnStart)
+	err := callCmdStartInstance.Start()
 	if err != nil {
 		env.logger.Println("callCmd.Start() error found:", err)
 	}
 
 	// block until cluster is up
 	// no need wait group, need to termiate
-	go callCmd.Wait()
+	go func() {
+		err = callCmdStartInstance.Wait()
+		if err != nil {
+			env.logger.Println("callCmd.Wait() finished with error found:", err)
+		} else {
+			env.logger.Println("callCmd.Wait() finished without error.")
+		}
+
+		if isExit, ok := exitApp.Load().(bool); !ok || !isExit {
+			env.logger.Println("BootstrapLocalClusterMember do not detect exitApp cmd, will restart...")
+			restartMemberChannel <- MEMBER_RESTART_CMDWAIT
+		}
+	}()
 }
 
 func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
@@ -535,6 +560,13 @@ func execHealthChechRunning(firstRun bool) (result bool) {
 		result = true
 	} else {
 		result = false
+
+		// trigger restart related
+		execCheckFailedTimes++
+		if execCheckFailedTimes >= MEMBER_MAX_FAILED_TIMES {
+			execCheckFailedTimes = 0
+			restartMemberChannel <- MEMBER_RESTART_CMDWAIT
+		}
 	}
 
 	cm = NewClusterMember(env.GetNodename(), env.localIP.String(), result)
@@ -635,4 +667,40 @@ func getClientMembersApi(endpoints []string) *etcd.ApiMembers {
 	}
 
 	return memApi
+}
+
+// Watch restartMemberChannel
+func clusterMemberRestartRoutine() {
+	//flush last log info
+	defer env.logger.Sync()
+
+	select {
+	case trigger := <-restartMemberChannel:
+		if trigger == MEMBER_RESTART_CMDWAIT {
+			env.logger.Println("exec restartMemberChannel MEMBER_RESTART_CMDWAIT...")
+
+		} else if trigger == MEMBER_RESTART_HEALTHCHECK {
+			env.logger.Println("exec restartMemberChannel MEMBER_RESTART_HEALTHCHECK...")
+			if callCmdStartInstance.Process != nil {
+				env.logger.Println("Kill old process runtime, pid:", callCmdStartInstance.Process.Pid)
+				callCmdStartInstance.Process.Kill()
+			}
+
+		} else {
+			env.logger.Println("Fetch error restartMemberChannel value:", trigger)
+		}
+
+		if callCmdStartInstance.ProcessState != nil &&
+			(callCmdStartInstance.ProcessState.Exited() || callCmdStartInstance.ProcessState.Success()) {
+
+			bootstrapLocalClusterMember()
+		} else {
+
+			if callCmdStartInstance.ProcessState == nil {
+				env.logger.Println("Exception: callCmdStartInstance.ProcessState is nil.")
+			} else {
+				env.logger.Println("Exception: callCmdStartInstance.ProcessState is:", callCmdStartInstance.ProcessState.String())
+			}
+		}
+	}
 }
