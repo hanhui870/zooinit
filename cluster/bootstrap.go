@@ -566,6 +566,8 @@ func execHealthChechRunning(firstRun bool) (result bool) {
 	if callCmd.ProcessState != nil && callCmd.ProcessState.Success() {
 		// when the health check call normal return, break the infinite loop
 		result = true
+		// reset to 0
+		execCheckFailedTimes = 0
 	} else {
 		result = false
 
