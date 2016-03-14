@@ -125,10 +125,11 @@ func Bootstrap(c *cli.Context) {
 	// Will block
 	loopUntilClusterIsUp(env.timeout)
 
+	//must before watchDogRunning
+	go clusterMemberRestartRoutine()
+
 	// watch and check cluster health [watchdog], block until server receive term signal
 	watchDogRunning()
-
-	go clusterMemberRestartRoutine()
 
 	// final wait.
 	cmdWaitGroup.Wait()
@@ -564,12 +565,15 @@ func execHealthChechRunning(firstRun bool) (result bool) {
 		// trigger restart related
 		execCheckFailedTimes++
 		if execCheckFailedTimes >= MEMBER_MAX_FAILED_TIMES {
+			env.logger.Fatalln("Cluster member is NOT healthy, will trigger Restart. Failed times:", execCheckFailedTimes, ", MEMBER_MAX_FAILED_TIMES:", MEMBER_MAX_FAILED_TIMES)
 			execCheckFailedTimes = 0
 			restartMemberChannel <- MEMBER_RESTART_CMDWAIT
+		} else {
+			env.logger.Println("Cluster member is NOT healthy, Failed times:", execCheckFailedTimes)
 		}
 	}
 
-	cm = NewClusterMember(env.GetNodename(), env.localIP.String(), result)
+	cm = NewClusterMember(env.GetNodename(), env.localIP.String(), result, execCheckFailedTimes)
 	kvApi := getClientKeysApi()
 	pathNode := env.discoveryPath + CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
 	resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: CLUSTER_MEMBER_NODE_TTL})
