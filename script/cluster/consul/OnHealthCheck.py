@@ -30,9 +30,9 @@ def run(info):
 
         # json need to docode too
         # raise ValueError(errmsg("Expecting value", s, err.value)) from None
-        if con != "" and con != None:
+        try:
             health = json.loads(con)
-        else:
+        except Exception as err:
             health = []
         print("Health info " + info.GetNodename() + ":" + str(resp.status) + " " + str(resp.reason) + " " + str(health))
         if (len(health) > 0):

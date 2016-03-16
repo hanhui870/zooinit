@@ -27,9 +27,9 @@ def run(info):
             resp = conn.getresponse()
             con = resp.read().decode("UTF-8").strip("")
             # json need to docode too
-            if con != "" and con != None:
+            try:
                 leader = json.loads(con)
-            else:
+            except Exception as err:
                 leader = ""
 
             print("Get leader response:" + str(resp.status) + " " + str(resp.reason) + " " + str(leader))
