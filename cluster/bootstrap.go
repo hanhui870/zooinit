@@ -706,17 +706,13 @@ func clusterMemberRestartRoutine() {
 				env.logger.Println("Fetch error restartMemberChannel value:", trigger)
 			}
 
-			if callCmdStartInstance.ProcessState != nil &&
-				(callCmdStartInstance.ProcessState.Exited() || callCmdStartInstance.ProcessState.Success()) {
-
+			//ProcessState stores information about a process, as reported by Wait.
+			if callCmdStartInstance.ProcessState != nil {
+				env.logger.Println("Exception: callCmdStartInstance.ProcessState is:", callCmdStartInstance.ProcessState.String())
 				bootstrapLocalClusterMember()
-			} else {
 
-				if callCmdStartInstance.ProcessState == nil {
-					env.logger.Println("Exception: callCmdStartInstance.ProcessState is nil.")
-				} else {
-					env.logger.Println("Exception: callCmdStartInstance.ProcessState is:", callCmdStartInstance.ProcessState.String())
-				}
+			} else {
+				env.logger.Println("Exception: callCmdStartInstance.ProcessState is nil.")
 			}
 		}
 	}
