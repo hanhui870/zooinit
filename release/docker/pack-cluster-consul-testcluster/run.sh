@@ -22,12 +22,12 @@ fi
 Cluster="cluster-consul-testcluster"
 
 if [ "$Debug" = "true" ]; then
-    docker run -ti -P haimi:zooinit-${Cluster} zooinit cluster -b consul $service
+    docker run -ti --net=host -P haimi:zooinit-${Cluster} zooinit cluster -b consul $service
 
 else :
     docker pull ${Registry}/haimi:zooinit-${Cluster}
     docker tag -f ${Registry}/haimi:zooinit-${Cluster} haimi:zooinit-${Cluster}
 
     # Use -P can expose ports to outside machine for client access.
-    docker run -d -P haimi:zooinit-${Cluster} zooinit cluster -b consul $service
+    docker run -d --net=host -P haimi:zooinit-${Cluster} zooinit cluster -b consul $service
 fi
