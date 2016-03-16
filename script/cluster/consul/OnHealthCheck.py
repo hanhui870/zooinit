@@ -30,7 +30,7 @@ def run(info):
 
         # json need to docode too
         # raise ValueError(errmsg("Expecting value", s, err.value)) from None
-        if con:
+        if con != "":
             health = json.loads(con)
         else:
             health = []

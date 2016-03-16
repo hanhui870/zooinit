@@ -27,7 +27,11 @@ def run(info):
             resp = conn.getresponse()
             con = resp.read().decode("UTF-8").strip("")
             # json need to docode too
-            leader = json.loads(con)
+            if con != "":
+                leader = json.loads(con)
+            else:
+                leader = ""
+
             print("Get leader response:" + str(resp.status) + " " + str(resp.reason) + " " + str(leader))
 
             conn.request("get", "/v1/status/peers")
