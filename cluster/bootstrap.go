@@ -693,7 +693,12 @@ func getQurorumSize() {
 
 		qurorumSyncLock.Lock()
 		qurorumSize = int(tmp)
-		qurorumWatchIndex = resp.Node.ModifiedIndex
+		if latestIndex > resp.Node.ModifiedIndex {
+			qurorumWatchIndex = latestIndex
+		} else {
+			qurorumWatchIndex = resp.Node.ModifiedIndex
+		}
+
 		qurorumSyncLock.Unlock()
 	}
 }
