@@ -576,7 +576,7 @@ func execHealthChechRunning(firstRun bool) (result bool) {
 		if execCheckFailedTimes >= MEMBER_MAX_FAILED_TIMES {
 			env.logger.Fatalln("Cluster member is NOT healthy, will trigger Restart. Failed times:", execCheckFailedTimes, ", MEMBER_MAX_FAILED_TIMES:", MEMBER_MAX_FAILED_TIMES)
 			execCheckFailedTimes = 0
-			restartMemberChannel <- MEMBER_RESTART_CMDWAIT
+			restartMemberChannel <- MEMBER_RESTART_HEALTHCHECK
 		} else {
 			env.logger.Println("Cluster member is NOT healthy, Failed times:", execCheckFailedTimes)
 		}
