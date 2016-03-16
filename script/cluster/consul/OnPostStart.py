@@ -27,7 +27,7 @@ def run(info):
             resp = conn.getresponse()
             con = resp.read().decode("UTF-8").strip("")
             # json need to docode too
-            if con != "":
+            if con != "" and con != None:
                 leader = json.loads(con)
             else:
                 leader = ""
