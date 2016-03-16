@@ -1,5 +1,6 @@
-# this allow code file use utf-8 code chinese
 # coding=utf-8
+# this allow code file use utf-8 code chinese
+# python -c 'import locale; print( locale.getpreferredencoding())'
 import os
 import traceback
 
