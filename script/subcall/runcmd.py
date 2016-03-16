@@ -29,12 +29,16 @@ def runWithStdoutSync(args):
 
     except subprocess.CalledProcessError as err:
         print("Found CalledProcessError:", err, err.output)
-        print("Will exit now...")
+        print("Will kill subprocess and exit now...")
+
+        proc.kill()
         sys.exit(1)
 
     except Exception as err:
         print("Found error:", err)
-        print("Will exit now...")
+        print("Will kill subprocess and exit now...")
+
+        proc.kill()
         sys.exit(1)
 
 
