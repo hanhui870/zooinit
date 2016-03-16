@@ -69,8 +69,12 @@ var (
 
 	// Whether cluster is booted and healthy
 	clusterUpdated bool
+	// Where the cluster is booted before, for container rejoin
+	clusterIsBootedBefore bool
 	// Is terminate the app
 	exitApp atomic.Value
+	// Latest modify index for etcd qurorum watch
+	latestIndex uint64
 
 	callCmdStartInstance *exec.Cmd
 	// Restart cluster member channel
@@ -81,6 +85,8 @@ var (
 func init() {
 	// init channel
 	restartMemberChannel = make(chan int)
+	// false
+	clusterIsBootedBefore = false
 }
 
 // Zooinit app runtime main line
@@ -165,7 +171,22 @@ func initializeClusterDiscoveryInfo() {
 
 			resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
 			if err == nil {
-				env.logger.Fatalln("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED)
+				env.logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, ", will check whether in the nodelist...")
+
+				// fetch latest node list
+				nodeList, err := getLastestNodeList()
+				if err != nil {
+					env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest election nodes error:", err)
+				} else {
+					if utility.InSlice(nodeList, env.localIP.String()) {
+						env.logger.Println("Etcd.Api() local machine is in the nodelist:", env.localIP.String(), nodeList, ", will continue to restart...")
+
+						clusterIsBootedBefore = true
+					} else {
+						env.logger.Fatalln("Etcd.Api() local machine is NOT in the nodelist:", env.localIP.String(), nodeList)
+					}
+				}
+
 			} else if !etcd.EqualEtcdError(err, client.ErrorCodeKeyNotFound) {
 				env.logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
 			}
@@ -196,6 +217,9 @@ func initializeClusterDiscoveryInfo() {
 		env.logger.Fatalln("Etcd.Api() CreateInOrder error:", err)
 	} else {
 		env.logger.Println("Etcd.Api() CreateInOrder ok:", resp)
+
+		// init create in order latestIndex
+		latestIndex = resp.Node.CreatedIndex - 1
 
 		// Call script
 		if env.eventOnPostRegist != "" {
@@ -231,14 +255,15 @@ func loopUntilQurorumIsReached() {
 
 	kvApi := getClientKeysApi()
 
-	var latestIndex uint64
 	// GetLatestElectionMember index incrs from this one
-	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
-	if err != nil {
-		env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest ModifiedIndex error:", err)
+	if !clusterIsBootedBefore {
+		resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
+		if err != nil {
+			env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest ModifiedIndex error:", err)
 
-	} else {
-		latestIndex = resp.Node.ModifiedIndex - 1 // latestIndex-1 for check unitial change
+		} else {
+			latestIndex = resp.Node.ModifiedIndex - 1 // latestIndex-1 for check unitial change
+		}
 	}
 
 	// GetConfigSize
@@ -253,7 +278,7 @@ func loopUntilQurorumIsReached() {
 	// loop until qurorum size is reached
 	for {
 		wather := kvApi.Conn().Watcher(env.discoveryPath+CLUSTER_SELECTION_DIR, &client.WatcherOptions{Recursive: true, AfterIndex: latestIndex})
-		resp, err = wather.Next(etcd.Context())
+		resp, err := wather.Next(etcd.Context())
 		if err != nil {
 			env.logger.Fatalln("Etcd.Watcher() watch "+env.discoveryPath+CLUSTER_SELECTION_DIR+" error:", err)
 
@@ -262,7 +287,8 @@ func loopUntilQurorumIsReached() {
 			env.logger.Println("Get last ModifiedIndex of watch:", latestIndex)
 		}
 
-		resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
+		// fetch latest node list
+		nodeList, err := getLastestNodeList()
 		if err != nil {
 			env.logger.Println("Etcd.Api() get "+env.discoveryPath+CLUSTER_SELECTION_DIR+" lastest election nodes error:", err)
 			env.logger.Println("Will exit now...")
@@ -279,15 +305,6 @@ func loopUntilQurorumIsReached() {
 			}
 
 		} else {
-			var nodeList []string
-			for _, node := range resp.Node.Nodes {
-				if node.Dir || !etcd.CheckInOrderKeyFormat(node.Key) {
-					continue
-				}
-				nodeList = append(nodeList, node.Value)
-			}
-
-			nodeList = utility.RemoveDuplicateInOrder(nodeList)
 			env.logger.Println("Get election qurorum size, after remove duplicates:", len(nodeList), "members:", nodeList)
 
 			if len(nodeList) >= qurorumSize {
@@ -305,6 +322,29 @@ func loopUntilQurorumIsReached() {
 				break
 			}
 		}
+	}
+}
+
+func getLastestNodeList() ([]string, error) {
+	//flush last log info
+	defer env.logger.Sync()
+
+	kvApi := getClientKeysApi()
+
+	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_SELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
+	if err != nil {
+		return nil, err
+	} else {
+		var nodeList []string
+		for _, node := range resp.Node.Nodes {
+			if node.Dir || !etcd.CheckInOrderKeyFormat(node.Key) {
+				continue
+			}
+			nodeList = append(nodeList, node.Value)
+		}
+
+		nodeList = utility.RemoveDuplicateInOrder(nodeList)
+		return nodeList, nil
 	}
 }
 
