@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import traceback
 
 
 def runWithStdoutSync(args):
@@ -29,6 +30,7 @@ def runWithStdoutSync(args):
 
     except subprocess.CalledProcessError as err:
         print("Found CalledProcessError:", err, err.output)
+        print(traceback.format_exc())
         print("Will kill subprocess and exit now...")
 
         proc.kill()
@@ -36,6 +38,7 @@ def runWithStdoutSync(args):
 
     except Exception as err:
         print("Found error:", err)
+        print(traceback.format_exc())
         print("Will kill subprocess and exit now...")
 
         proc.kill()

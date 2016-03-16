@@ -4,6 +4,7 @@ import io
 import time
 import json
 import ipaddress
+import traceback
 from http.client import HTTPConnection
 from cluster.info import Info
 from cluster.zookeeper.ServerInfo import ServerInfo, GetServerInfo
@@ -32,6 +33,7 @@ def run(info):
 
         except Exception as err:
             print("Found error:" + str(err) + " while health check, continue loop...")
+            print(traceback.format_exc())
 
         # sleep 100ms no , 1s is enough
         time.sleep(1)

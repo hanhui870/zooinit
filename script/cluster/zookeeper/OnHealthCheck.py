@@ -1,4 +1,6 @@
 import sys
+import traceback
+
 from cluster.info import Info
 from cluster.zookeeper.ServerInfo import ServerInfo, GetServerInfo
 from subcall import runcmd
@@ -26,6 +28,7 @@ def run(info):
 
     except Exception as err:
         print("Found error:" + str(err) + " while health check, continue loop...")
+        print(traceback.format_exc())
         sys.exit(1)
 
 

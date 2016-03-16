@@ -4,6 +4,7 @@ import io
 import time
 import json
 import ipaddress
+import traceback
 from http.client import HTTPConnection
 from cluster.info import Info
 from cluster.consul.Constant import Constant
@@ -47,6 +48,7 @@ def run(info):
                         break
                     except Exception as err:
                         print("Found error:" + str(err) + " will quit health check.")
+                        print(traceback.format_exc())
                         sys.exit(1)
 
                 else:
@@ -56,6 +58,7 @@ def run(info):
 
         except Exception as err:
             print("Found error:" + str(err) + " while health check, continue loop...")
+            print(traceback.format_exc())
 
         # sleep 100ms no , 1s is enough
         time.sleep(1)
