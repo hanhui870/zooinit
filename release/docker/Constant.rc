@@ -9,3 +9,6 @@ ProjectPath=/Users/bruce/project/godev/src/zooinit
 
 # Go语言的docker构建镜像
 ImageBuild="haimi:go-docker-dev"
+
+# Version now.
+Version=0.0.9
