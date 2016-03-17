@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -73,6 +74,9 @@ func BootstrapEtcd(env *envInfo) {
 	bootstrapLocalClusterMember()
 
 	checkDiscoveryClusterIsUp()
+
+	// Up and fetch latest endpoints.
+	UpdateLatestEndpoints()
 
 	//must before watchDogRunning
 	go clusterMemberRestartRoutine()
@@ -411,4 +415,22 @@ func clusterMemberRestartRoutine() {
 			}
 		}
 	}
+}
+
+func UpdateLatestEndpoints() {
+	//flush last log info
+	defer env.logger.Sync()
+
+	memApi := getClientMembersApi(strings.Split(env.GetClientUrl(), ","))
+
+	tmpEndpoints, err := memApi.GetInitialClusterEndpoints()
+	if err != nil {
+		env.logger.Fatalln("Etcd.GetInitialClusterEndpoints() found error:", err)
+	}
+	env.logger.Println("Fetch discovery service latest endpoints:", tmpEndpoints)
+
+	// lock for update
+	endpointsSyncLock.Lock()
+	defer endpointsSyncLock.Unlock()
+	lastestEndpoints = tmpEndpoints
 }
