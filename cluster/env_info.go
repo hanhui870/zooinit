@@ -101,7 +101,15 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 	}
 
 	obj.clusterBackend = backend
-	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+
+	// Construct logger instance
+	if obj.logChannel == "file" {
+		obj.logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	} else if obj.logChannel == "stdout" {
+		obj.logger = loglocal.GetBufferedLogger()
+	} else if obj.logChannel == "multi" {
+		obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	}
 	//flush last log info
 	defer obj.logger.Sync()
 

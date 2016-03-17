@@ -60,6 +60,30 @@ func main() {
 		Usage: "Backend name of cluster, eg: consul, etcd, zookeeper...",
 	}
 
+	ipHint := &cli.StringFlag{
+		Name:  "ip.hint",
+		Value: "",
+		Usage: "Ip hint use to found which ip for boot bind, will automatically find intranet ip.",
+	}
+
+	discoverMethod := &cli.StringFlag{
+		Name:  "discover.method",
+		Value: "",
+		Usage: "Available: address, may single point failure; dnssrv, this could be a second choise, with dnssrv update api.",
+	}
+
+	discoverTarget := &cli.StringFlag{
+		Name:  "discover.target",
+		Value: "",
+		Usage: "Discovery target value to discover other members.",
+	}
+
+	discoverPathPrefix := &cli.StringFlag{
+		Name:  "discover.path.prefix",
+		Value: "",
+		Usage: "Ip hint use to found which ip for boot bind, will automatically find intranet ip.",
+	}
+
 	// Used for bootstrap etcd
 	discovery := &cli.StringFlag{
 		Name:  "discovery, d",
@@ -126,7 +150,8 @@ func main() {
 			Usage:  "Usage: " + os.Args[0] + " cluster -f config.ini -b backend service \nBootstrop the cluster configured in the configuration file.",
 			Action: cluster.Bootstrap,
 			Flags: []cli.Flag{
-				backendFlag, cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath,
+				backendFlag, ipHint, discoverMethod, discoverTarget, discoverPathPrefix,
+				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath,
 			},
 		},
 	}
