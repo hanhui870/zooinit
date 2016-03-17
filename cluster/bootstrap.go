@@ -99,17 +99,20 @@ func Bootstrap(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	servie := c.Args()[0]
-	if strings.Trim(servie, " \t\n\r") == "" {
+	service := c.Args()[0]
+	service = strings.Trim(service, " \t\n\r")
+	if service == "" {
 		syslog.Fatalln("Command args of service name is empty.")
+	} else if service == "bootstrap" {
+		syslog.Fatalln("Service name of \"bootstrap\" is reserved.")
 	}
 
 	// backend of servie
 	backend := c.String("backend")
 	if backend == "" {
-		backend = servie
+		backend = service
 	}
-	env = NewEnvInfo(iniobj, backend, servie)
+	env = NewEnvInfo(iniobj, backend, service)
 
 	//flush last log info
 	defer env.logger.Sync()
