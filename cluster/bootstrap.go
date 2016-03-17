@@ -145,6 +145,9 @@ func Bootstrap(c *cli.Context) {
 	// Will block
 	loopUntilClusterIsUp(env.timeout)
 
+	// Apart from watch dog running
+	eventOnClusterBooted()
+
 	//must before watchDogRunning
 	go clusterMemberRestartRoutine()
 
@@ -562,7 +565,7 @@ func updateDiscoveryTTL() {
 	}
 }
 
-func watchDogRunning() {
+func eventOnClusterBooted() {
 	//flush last log info
 	defer env.logger.Sync()
 
@@ -575,6 +578,11 @@ func watchDogRunning() {
 		}
 		callCmd.Wait()
 	}
+}
+
+func watchDogRunning() {
+	//flush last log info
+	defer env.logger.Sync()
 
 	//this can not use goroutine, this is a loop
 	firstRun := true
