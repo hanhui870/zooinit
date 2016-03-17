@@ -197,9 +197,6 @@ func BootstrapEtcd(env *envInfo) error {
 	}
 
 	// Watch dog run
-	env.logger.Println("Cluster watch dog is going to run...")
-	w := NewWatchDog(env, internalClientUrl, discoveryClientUrl)
-	go w.Run()
 
 	// check cluster bootstraped and register memberself
 	// If stoped, process's output can't trace no longer
