@@ -32,6 +32,14 @@ func BootstrapEtcd(env *envInfo) error {
 		env.logger.Fatal("Etcd NewApi error:", err)
 	}
 
+	env.logger.Println("Logger channel:", env.logChannel)
+	if env.logChannel != log.LOG_STDOUT {
+		env.logger.Println("Logger path:", env.logPath)
+	}
+	env.logger.Println("Timeout:", env.timeout.String())
+	env.logger.Println("Qurorum:", env.qurorum)
+	env.logger.Println("Discover Internal:", internalClientUrl)
+
 	// Need declare for terminate
 	var internalCmd *exec.Cmd
 	if env.isSelfIp {

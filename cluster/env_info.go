@@ -95,9 +95,6 @@ func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
 	//flush last log info
 	defer obj.logger.Sync()
 
-	//register signal watcher
-	obj.registerSignalWatch()
-
 	obj.logger.Println("Service name of cluster is:", obj.service)
 
 	obj.discoveryMethod = sec.Key("discover.method").String()

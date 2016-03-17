@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/codegangsta/cli"
 	"github.com/go-ini/ini"
 
 	"zooinit/config"
@@ -39,7 +40,7 @@ type envInfo struct {
 	// whether internalHost is the machine running program owns
 	isSelfIp bool
 
-	//localIP for boot
+	// localIP for boot
 	localIP net.IP
 
 	// cluster totol qurorum
@@ -47,7 +48,9 @@ type envInfo struct {
 	// sec unit
 	timeout time.Duration
 
-	logPath string
+	// Configuration of runtime log channel: file, write to file; stdout, write to stdout; multi, write both.
+	logChannel string
+	logPath    string
 
 	// Logger instance for service
 	logger *loglocal.BufferedFileLogger
@@ -63,10 +66,10 @@ type envInfo struct {
 func NewEnvInfoFile(fname string) *envInfo {
 	iniobj := config.GetConfigInstance(fname)
 
-	return NewEnvInfo(iniobj)
+	return NewEnvInfo(iniobj, nil)
 }
 
-func NewEnvInfo(iniobj *ini.File) *envInfo {
+func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 	obj := new(envInfo)
 
 	sec := iniobj.Section(CONFIG_SECTION)
@@ -75,67 +78,87 @@ func NewEnvInfo(iniobj *ini.File) *envInfo {
 		log.Fatalln("Config of service is empty.")
 	}
 
-	obj.logPath = sec.Key("log.path").String()
-	if obj.logPath == "" {
-		log.Fatalln("Config of log.path is empty.")
+	// key for process now
+	var keyNow string
+
+	keyNow = "log.channel"
+	obj.logChannel = config.GetValueString(keyNow, sec, c)
+	if obj.logChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, obj.logChannel) {
+		log.Fatalln("Config of " + keyNow + " must be one of file/stdout/multi.")
 	}
 
-	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	keyNow = "log.path"
+	obj.logPath = config.GetValueString(keyNow, sec, c)
+	if obj.logPath == "" {
+		log.Fatalln("Config of " + keyNow + " is empty.")
+	}
+
+	// Construct logger instance
+	if obj.logChannel == "file" {
+		obj.logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	} else if obj.logChannel == "stdout" {
+		obj.logger = loglocal.GetBufferedLogger()
+	} else if obj.logChannel == "multi" {
+		obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	}
 	//flush last log info
 	defer obj.logger.Sync()
 
-	//register signal watcher
-	obj.registerSignalWatch()
-
 	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
 
-	discovery := sec.Key("discovery").String()
+	keyNow = "discovery"
+	discovery := config.GetValueString(keyNow, sec, c)
 	if discovery == "" {
-		obj.logger.Fatalln("Config of discovery is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	if strings.Count(discovery, ":") != 2 {
-		obj.logger.Fatalln("Config of discovery need ip:port:peer format.")
+		obj.logger.Fatalln("Config of " + keyNow + " need ip:port:peer format.")
 	}
 	obj.discoveryHost = discovery[0:strings.Index(discovery, ":")]
 	obj.discoveryPort = discovery[strings.Index(discovery, ":")+1 : strings.LastIndex(discovery, ":")]
 	obj.discoveryPeer = discovery[strings.LastIndex(discovery, ":")+1:]
 
-	internal := sec.Key("internal").String()
+	keyNow = "internal"
+	internal := config.GetValueString(keyNow, sec, c)
 	if internal == "" {
-		obj.logger.Fatalln("Config of internal is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	if strings.Count(internal, ":") != 1 {
-		obj.logger.Fatalln("Config of internal need port:peer format.")
+		obj.logger.Fatalln("Config of " + keyNow + " need port:peer format.")
 	}
 	// Must be identical with discoveryHost
 	obj.internalHost = obj.discoveryHost
 	obj.internalPort = internal[0:strings.Index(internal, ":")]
 	obj.internalPeer = internal[strings.LastIndex(internal, ":")+1:]
 
-	path := sec.Key("internal.data.dir").String()
+	keyNow = "internal.data.dir"
+	path := config.GetValueString(keyNow, sec, c)
 	if path == "" {
-		obj.logger.Fatalln("Config of internal.data.dir is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.internalDataDir = path
 
-	path = sec.Key("internal.wal.dir").String()
+	keyNow = "internal.wal.dir"
+	path = config.GetValueString(keyNow, sec, c)
 	if path == "" {
-		obj.logger.Fatalln("Config of internal.wal.dir is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.internalWalDir = path
 
-	qurorum, err := sec.Key("qurorum").Int()
+	keyNow = "qurorum"
+	qurorum, err := config.GetValueInt(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of qurorum is error:", err)
+		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if qurorum < 3 {
-		obj.logger.Fatalln("Config of qurorum must >=3")
+		obj.logger.Fatalln("Config of " + keyNow + " must >=3")
 	}
 	obj.qurorum = qurorum
 
-	timeout, err := sec.Key("timeout").Float64()
+	keyNow = "timeout"
+	timeout, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of timeout is error:", err)
+		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if timeout == 0 {
 		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
@@ -143,29 +166,33 @@ func NewEnvInfo(iniobj *ini.File) *envInfo {
 		obj.timeout = time.Duration(int(timeout * 1000000000))
 	}
 
-	obj.cmd = sec.Key("boot.cmd").String()
+	keyNow = "boot.cmd"
+	obj.cmd = config.GetValueString(keyNow, sec, c)
 	if obj.cmd == "" {
-		obj.logger.Fatalln("Config of boot.cmd is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
-	path = sec.Key("boot.data.dir").String()
+	keyNow = "boot.data.dir"
+	path = config.GetValueString(keyNow, sec, c)
 	if path == "" {
-		obj.logger.Fatalln("Config of boot.data.dir is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.cmdDataDir = path
 
-	path = sec.Key("boot.wal.dir").String()
+	keyNow = "boot.wal.dir"
+	path = config.GetValueString(keyNow, sec, c)
 	if path == "" {
-		obj.logger.Fatalln("Config of boot.wal.dir is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.cmdWalDir = path
 
-	snapCount, err := sec.Key("boot.snap.count").Float64()
+	keyNow = "boot.snap.count"
+	snapCount, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of etcd boot.snap.count is error:", err)
+		obj.logger.Fatalln("Config of etcd "+keyNow+" is error:", err)
 	}
 	if snapCount > 100000 || snapCount < 100 {
-		obj.logger.Fatalln("Config of etcd boot.snap.count must between 100-100000")
+		obj.logger.Fatalln("Config of etcd " + keyNow + " must between 100-100000")
 	} else {
 		obj.cmdSnapCount = int(snapCount)
 	}
@@ -256,6 +283,8 @@ func (e *envInfo) registerSignalWatch() {
 	if e == nil {
 		return
 	}
+
+	defer e.logger.Sync()
 
 	sg := utility.NewSignalCatcher()
 	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {

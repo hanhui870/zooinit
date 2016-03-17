@@ -33,6 +33,11 @@ var (
 const (
 	DEFAULT_LOGGER_FLAGS  = log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile
 	DEFALUT_BLANK_STRINGS = " \n\r"
+
+	LOG_FILE   = "file"
+	LOG_STDOUT = "stdout"
+	// file and stdout
+	LOG_MULTI = "multi"
 )
 
 func init() {
