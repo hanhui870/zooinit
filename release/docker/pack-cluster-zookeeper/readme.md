@@ -9,3 +9,11 @@
         -Dcom.sun.management.jmxremote.local.only=false
         org.apache.zookeeper.server.quorum.QuorumPeerMain
         /Users/bruce/software/zookeeper-3.4.6/bin/../conf/zoo.cfg
+
+
+# Useful command
+
+    1. startup testcluster
+        docker run -ti -P --net=host haimi:zooinit-cluster-zookeeper zooinit cluster -b=zookeeper -discover.target=http://192.168.4.220:2379 -ip.hint=192.168.4.108 zookeeperTestCluster
+
+
