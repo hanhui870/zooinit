@@ -20,6 +20,7 @@ def runWithStdoutSync(args):
                     line = line.strip().decode("UTF-8")
                     if line != "":
                         # OnStart: Found error: 'ascii' codec can't encode character '\xb5' in position 66: ordinal not in range(128)
+                        # TODO b'2016/03/17 18:26:40
                         print(line.encode("UTF-8"))
                 else:
                     # print("End of stdout, will break out loop...")
