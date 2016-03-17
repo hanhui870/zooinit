@@ -128,6 +128,7 @@ func Bootstrap(c *cli.Context) {
 	env.logger.Println("Qurorum:", env.qurorum)
 	env.logger.Println("Discover method:", env.discoveryMethod)
 	env.logger.Println("Discover path:", env.discoveryPath)
+	env.logger.Println("Health check interval:", env.healthCheckInterval)
 	env.logger.Println("env.discoveryTarget for fetch members:", env.discoveryTarget)
 
 	// update endpoints

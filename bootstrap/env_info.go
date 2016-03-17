@@ -11,6 +11,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/go-ini/ini"
 
+	"zooinit/cluster"
 	"zooinit/config"
 	loglocal "zooinit/log"
 	"zooinit/utility"
@@ -60,6 +61,9 @@ type envInfo struct {
 	cmdDataDir   string
 	cmdWalDir    string
 	cmdSnapCount int
+
+	// Health check interval, default 2 sec, same to zookeeper ticktime.
+	healthCheckInterval time.Duration
 }
 
 // New env from file
@@ -164,6 +168,20 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
 	} else {
 		obj.timeout = time.Duration(int(timeout * 1000000000))
+	}
+
+	keyNow = "health.check.interval"
+	checkInterval, err := config.GetValueFloat64(keyNow, sec, c)
+	if err != nil {
+		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
+	}
+	if checkInterval > 60 || checkInterval < 1 {
+		obj.logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
+	}
+	if checkInterval == 0 {
+		obj.healthCheckInterval = cluster.CLUSTER_HEALTH_CHECK_INTERVAL
+	} else {
+		obj.healthCheckInterval = time.Duration(int(checkInterval * 1000000000))
 	}
 
 	keyNow = "boot.cmd"
@@ -277,6 +295,46 @@ func (e *envInfo) GetDiscoveryPort() string {
 	}
 
 	return e.discoveryPort
+}
+
+func (e *envInfo) GetInternalClientUrl() string {
+	if e == nil {
+		return ""
+	}
+
+	return "http://" + e.internalHost + ":" + e.internalPort
+}
+
+func (e *envInfo) GetInternalPeerUrl() string {
+	if e == nil {
+		return ""
+	}
+
+	return "http://" + e.internalHost + ":" + e.internalPeer
+}
+
+func (e *envInfo) GetClientUrl() string {
+	if e == nil {
+		return ""
+	}
+
+	return "http://" + env.localIP.String() + ":" + env.discoveryPort
+}
+
+func (e *envInfo) GetPeerUrl() string {
+	if e == nil {
+		return ""
+	}
+
+	return "http://" + env.localIP.String() + ":" + env.discoveryPeer
+}
+
+func (e *envInfo) GetNodename() string {
+	if e == nil {
+		return ""
+	}
+
+	return "Etcd-" + e.localIP.String()
 }
 
 func (e *envInfo) registerSignalWatch() {
