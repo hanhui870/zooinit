@@ -31,7 +31,7 @@ axel http://docker.alishui.com/etcd-v2.2.2-linux-amd64.tar.gz && tar xzvf etcd-v
 # package go program return dir now
 echo -e "Will package go program into tar file...\nDir now:" `pwd`
 
-cp -a zooinit/ outupt/zooinit-${Version}
+cp -a transfer/ outupt/zooinit-${Version}
 tar -czf outupt/zooinit-${Version}.tar.gz zooinit-${Version}/
 
 #TODO upload file to hosts.
