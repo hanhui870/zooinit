@@ -18,7 +18,10 @@ func Bootstrap(c *cli.Context) {
 	fname := config.GetConfigFileName(c.String("config"))
 	iniobj := config.GetConfigInstance(fname)
 
-	env = NewEnvInfo(iniobj)
+	env = NewEnvInfo(iniobj, c)
+
+	//register signal watcher
+	env.registerSignalWatch()
 
 	BootstrapEtcd(env)
 }

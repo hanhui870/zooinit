@@ -116,6 +116,8 @@ func Bootstrap(c *cli.Context) {
 
 	//flush last log info
 	defer env.logger.Sync()
+	//register signal watcher
+	env.registerSignalWatch()
 
 	env.logger.Println("Logger path:", env.logPath)
 	env.logger.Println("Timeout:", env.timeout.String())
