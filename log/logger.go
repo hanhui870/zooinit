@@ -43,7 +43,7 @@ func Logger() *BufferedFileLogger {
 	return defaultLogger
 }
 
-// Fetch a file based file service
+// Fetch stdout logger
 func GetBufferedLogger() *BufferedFileLogger {
 	logger := log.New(os.Stdout, "", DEFAULT_LOGGER_FLAGS)
 	return &BufferedFileLogger{logger: logger, ignoreBlank: true}
