@@ -112,14 +112,18 @@ func Bootstrap(c *cli.Context) {
 	if backend == "" {
 		backend = service
 	}
-	env = NewEnvInfo(iniobj, backend, service)
+
+	env = NewEnvInfo(iniobj, backend, service, c)
 
 	//flush last log info
 	defer env.logger.Sync()
 	//register signal watcher
 	env.registerSignalWatch()
 
-	env.logger.Println("Logger path:", env.logPath)
+	env.logger.Println("Logger channel:", env.logChannel)
+	if env.logChannel != log.LOG_STDOUT {
+		env.logger.Println("Logger path:", env.logPath)
+	}
 	env.logger.Println("Timeout:", env.timeout.String())
 	env.logger.Println("Qurorum:", env.qurorum)
 	env.logger.Println("Discover method:", env.discoveryMethod)

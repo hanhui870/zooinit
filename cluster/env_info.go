@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/codegangsta/cli"
 	"github.com/go-ini/ini"
 
 	"zooinit/config"
@@ -31,7 +32,9 @@ type envInfo struct {
 	// sec unit
 	timeout time.Duration
 
-	logPath string
+	// Configuration of runtime log channel: file, write to file; stdout, write to stdout; multi, write both.
+	logChannel string
+	logPath    string
 
 	// Logger instance for service
 	logger *loglocal.BufferedFileLogger
@@ -59,13 +62,13 @@ type envInfo struct {
 }
 
 // New env from file
-func NewEnvInfoFile(fname string, backend, servie string) *envInfo {
+func NewEnvInfoFile(fname string, backend, service string) *envInfo {
 	iniobj := config.GetConfigInstance(fname)
 
-	return NewEnvInfo(iniobj, backend, servie)
+	return NewEnvInfo(iniobj, backend, service, nil)
 }
 
-func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
+func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envInfo {
 	obj := new(envInfo)
 
 	// init map
@@ -77,54 +80,66 @@ func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
 		log.Fatalln("Config of section: " + clusterSection + " is not well configured.")
 	}
 
-	obj.service = servie
+	obj.service = service
 	if obj.service == "" {
 		log.Fatalln("Config of service is empty.")
 	}
 
-	obj.logPath = sec.Key("log.path").String()
+	// key for process now
+	var keyNow string
+
+	keyNow = "log.channel"
+	obj.logChannel = config.GetValueString(keyNow, sec, c)
+	if obj.logChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, obj.logChannel) {
+		log.Fatalln("Config of " + keyNow + " must be one of file/stdout/multi.")
+	}
+
+	keyNow = "log.path"
+	obj.logPath = config.GetValueString(keyNow, sec, c)
 	if obj.logPath == "" {
 		log.Fatalln("Config of log.path is empty.")
 	}
 
-	obj.clusterBackend = sec.Key("cluster.backend").String()
-	if obj.clusterBackend == "" {
-		log.Fatalln("Config of cluster.backend is empty.")
-	}
+	obj.clusterBackend = backend
 	obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
 	//flush last log info
 	defer obj.logger.Sync()
 
 	obj.logger.Println("Service name of cluster is:", obj.service)
 
-	obj.discoveryMethod = sec.Key("discover.method").String()
+	keyNow = "discover.method"
+	obj.discoveryMethod = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryMethod == "" {
-		obj.logger.Fatalln("Config of discover.method is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
-	obj.discoveryTarget = sec.Key("discover.target").String()
+	keyNow = "discover.target"
+	obj.discoveryTarget = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryTarget == "" {
-		obj.logger.Fatalln("Config of discover.target is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
-	obj.discoveryPath = sec.Key("discover.path").String()
+	keyNow = "discover.path"
+	obj.discoveryPath = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryPath == "" {
-		obj.logger.Fatalln("Config of discover.path is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.discoveryPath = obj.discoveryPath + "/" + obj.service
 
-	qurorum, err := sec.Key("qurorum").Int()
+	keyNow = "qurorum"
+	qurorum, err := config.GetValueInt(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of qurorum is error:", err)
+		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if qurorum < 3 {
-		obj.logger.Fatalln("Config of qurorum must >=3")
+		obj.logger.Fatalln("Config of " + keyNow + " must >=3")
 	}
 	obj.qurorum = qurorum
 
-	timeout, err := sec.Key("timeout").Float64()
+	keyNow = "timeout"
+	timeout, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of timeout is error:", err)
+		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if timeout == 0 {
 		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
@@ -132,12 +147,13 @@ func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
 		obj.timeout = time.Duration(int(timeout * 1000000000))
 	}
 
-	checkInterval, err := sec.Key("health.check.interval").Float64()
+	keyNow = "health.check.interval"
+	checkInterval, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of health.check.interval is error:", err)
+		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if checkInterval > 60 || checkInterval < 1 {
-		obj.logger.Fatalln("Config of health.check.interval must be between 1-60 sec.")
+		obj.logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
 	}
 	if checkInterval == 0 {
 		obj.healthCheckInterval = CLUSTER_HEALTH_CHECK_INTERVAL
@@ -146,49 +162,58 @@ func NewEnvInfo(iniobj *ini.File, backend, servie string) *envInfo {
 	}
 
 	// Event process
-	obj.eventOnPreRegist = sec.Key("EVENT_ON_PRE_REGIST").String()
+	keyNow = "EVENT_ON_PRE_REGIST"
+	obj.eventOnPreRegist = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnPreRegist != "" {
-		obj.logger.Println("Found event EVENT_ON_PRE_REGIST:", obj.eventOnPreRegist)
+		obj.logger.Println("Found event "+keyNow+":", obj.eventOnPreRegist)
 	}
-	obj.eventOnPostRegist = sec.Key("EVENT_ON_POST_REGIST").String()
+	keyNow = "EVENT_ON_POST_REGIST"
+	obj.eventOnPostRegist = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnPostRegist != "" {
-		obj.logger.Println("Found event EVENT_ON_POST_REGIST:", obj.eventOnPostRegist)
+		obj.logger.Println("Found event "+keyNow+":", obj.eventOnPostRegist)
 	}
-	obj.eventOnReachQurorumNum = sec.Key("EVENT_ON_REACH_QURORUM_NUM").String()
+	keyNow = "EVENT_ON_REACH_QURORUM_NUM"
+	obj.eventOnReachQurorumNum = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnReachQurorumNum != "" {
-		obj.logger.Println("Found event EVENT_ON_REACH_QURORUM_NUM:", obj.eventOnReachQurorumNum)
+		obj.logger.Println("Found event "+keyNow+":", obj.eventOnReachQurorumNum)
 	}
-	obj.eventOnPreStart = sec.Key("EVENT_ON_PRE_START").String()
+	keyNow = "EVENT_ON_PRE_START"
+	obj.eventOnPreStart = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnPreStart != "" {
-		obj.logger.Println("Found event EVENT_ON_PRE_START:", obj.eventOnPreStart)
+		obj.logger.Println("Found event "+keyNow+":", obj.eventOnPreStart)
 	}
 	//required
-	obj.eventOnStart = sec.Key("EVENT_ON_START").String()
+	keyNow = "EVENT_ON_START"
+	obj.eventOnStart = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnStart == "" {
-		obj.logger.Fatalln("Config of EVENT_ON_START is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	} else {
-		obj.logger.Println("Found event EVENT_ON_START:", obj.eventOnStart)
+		obj.logger.Println("Found event "+keyNow+":", obj.eventOnStart)
 	}
-	obj.eventOnPostStart = sec.Key("EVENT_ON_POST_START").String()
+	keyNow = "EVENT_ON_POST_START"
+	obj.eventOnPostStart = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnPostStart == "" {
-		obj.logger.Fatalln("Config of EVENT_ON_POST_START is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	} else {
-		obj.logger.Println("Found event EVENT_ON_POST_START:", obj.eventOnPostStart)
+		obj.logger.Println("Found event "+keyNow+":", obj.eventOnPostStart)
 	}
-	obj.eventOnClusterBooted = sec.Key("EVENT_ON_CLUSTER_BOOTED").String()
+	keyNow = "EVENT_ON_CLUSTER_BOOTED"
+	obj.eventOnClusterBooted = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnClusterBooted != "" {
-		obj.logger.Println("Found event EVENT_ON_CLUSTER_BOOTED:", obj.eventOnClusterBooted)
+		obj.logger.Println("Found event "+keyNow+":", obj.eventOnClusterBooted)
 	}
-	obj.eventOnHealthCheck = sec.Key("EVENT_ON_HEALTH_CHECK").String()
+	keyNow = "EVENT_ON_HEALTH_CHECK"
+	obj.eventOnHealthCheck = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnHealthCheck == "" {
-		obj.logger.Fatalln("Config of EVENT_ON_HEALTH_CHECK is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	} else {
-		obj.logger.Println("Found event EVENT_ON_HEALTH_CHECK:", obj.eventOnHealthCheck)
+		obj.logger.Println("Found event "+keyNow+":", obj.eventOnHealthCheck)
 	}
 
-	obj.iphint = sec.Key("ip.hint").String()
+	keyNow = "ip.hint"
+	obj.iphint = config.GetValueString(keyNow, sec, c)
 	if obj.iphint == "" {
-		obj.logger.Fatalln("Config of ip.hint is empty.")
+		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
 	// Find localip
