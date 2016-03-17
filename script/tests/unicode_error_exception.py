@@ -9,7 +9,7 @@ import traceback
 
 def test():
     try:
-        a = u'bats\u00E0'
+        a = u'bats\u00E0\xb5'
         print(a)
         print(a.encode("utf8"))
 
@@ -20,9 +20,9 @@ def test():
             while True:
                 line = out.readline()
                 if line != b"":
-                    line = line.strip().decode("UTF-8")
+                    line = line.strip().decode("utf8")
                     if line != "":
-                        print(line)
+                        print(line.encode("utf8").decode("utf8"))
                 else:
                     # print("End of stdout, will break out loop...")
                     break

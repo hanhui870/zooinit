@@ -17,11 +17,10 @@ def runWithStdoutSync(args):
             while True:
                 line = out.readline()
                 if line != b"":
-                    line = line.strip().decode("UTF-8")
+                    line = line.strip().decode("utf8")
                     if line != "":
                         # OnStart: Found error: 'ascii' codec can't encode character '\xb5' in position 66: ordinal not in range(128)
-                        # TODO b'2016/03/17 18:26:40
-                        print(line.encode("UTF-8"))
+                        print(line.encode("utf8").decode("utf8"))
                 else:
                     # print("End of stdout, will break out loop...")
                     break
@@ -36,6 +35,7 @@ def runWithStdoutSync(args):
         print("Will kill subprocess and exit now...")
 
         proc.kill()
+        proc.wait()
         sys.exit(1)
 
     except Exception as err:
@@ -44,6 +44,7 @@ def runWithStdoutSync(args):
         print("Will kill subprocess and exit now...")
 
         proc.kill()
+        proc.wait()
         sys.exit(1)
 
 
