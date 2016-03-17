@@ -131,14 +131,6 @@ func bootUpInternalEtcd() {
 	} else {
 		env.logger.Println("Exec Internal OK, PID:", internalCmd.Process.Pid)
 
-		// Release process after cluster up.
-		// may runtime error: invalid memory address or nil pointer dereference
-		defer func() {
-			if internalCmd.Process != nil {
-				internalCmd.Process.Kill()
-			}
-		}()
-
 		// Set PID
 		env.internalCmdInstance = internalCmd
 		env.logger.Println("Internal service started.")
