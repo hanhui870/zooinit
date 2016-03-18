@@ -15,6 +15,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/coreos/etcd/client"
 
+	"zooinit/bootstrap"
 	"zooinit/cluster/etcd"
 	"zooinit/config"
 	"zooinit/log"
@@ -103,8 +104,8 @@ func Bootstrap(c *cli.Context) {
 	service = strings.Trim(service, " \t\n\r")
 	if service == "" {
 		syslog.Fatalln("Command args of service name is empty.")
-	} else if service == "bootstrap" {
-		syslog.Fatalln("Service name of \"bootstrap\" is reserved.")
+	} else if service == bootstrap.BOOTSTRAP_SERVICE_NAME {
+		syslog.Fatalln("Service name of \"" + bootstrap.BOOTSTRAP_SERVICE_NAME + "\" is reserved.")
 	}
 
 	// backend of servie
