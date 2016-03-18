@@ -108,7 +108,7 @@ func bootUpInternalEtcd() {
 	// Add & can't fast wait
 	// data-dir can't be same with discovery service.
 	intName := "etcd.initial"
-	intExecCmd := "etcd --data-dir " + env.internalDataDir + " -wal-dir " + env.internalWalDir + " -name " + intName +
+	intExecCmd := env.cmd + " --data-dir " + env.internalDataDir + " -wal-dir " + env.internalWalDir + " -name " + intName +
 		" -initial-advertise-peer-urls " + env.GetInternalPeerUrl() +
 		" -listen-peer-urls " + env.GetInternalPeerUrl() +
 		" -listen-client-urls " + env.GetInternalClientUrl() +
