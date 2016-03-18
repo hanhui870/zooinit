@@ -19,4 +19,6 @@ ADD transfer/ /server/zooinit/
 
 VOLUME ["/data"]
 
+#etcd client port
+EXPOSE 2379
 ENTRYPOINT ["/server/zooinit/entrypoint.sh"]
