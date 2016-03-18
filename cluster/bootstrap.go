@@ -198,6 +198,9 @@ func initializeClusterDiscoveryInfo() {
 				if IsClusterBootedBefore() {
 					env.logger.Println("Zooinit has found cluster has started before, will continue to restart...")
 
+					//remove /election out dated item compare to /members
+					removeOutDateClusterMemberElection()
+
 					clusterIsBootedBefore = true
 				} else {
 					env.logger.Fatalln("Zooinit found cluster has NOT started before, it is not allowed to join a booted cluster.")
@@ -832,6 +835,55 @@ func clusterMemberRestartRoutine() {
 
 			} else {
 				env.logger.Println("Exception: callCmdStartInstance.ProcessState is nil.")
+			}
+		}
+	}
+}
+
+// remove /election out dated item compare to /members
+// can also remove self, because will register later
+func removeOutDateClusterMemberElection() {
+	//flush last log info
+	defer env.logger.Sync()
+
+	env.logger.Println("Process removeOutDateClusterMemberElection: remove /election out dated item compare to /members...")
+
+	kvApi := getClientKeysApi()
+	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_MEMBER_DIR, &client.GetOptions{Recursive: true, Sort: true})
+	if err != nil {
+		env.logger.Println("Fetched latest membesrs error:", err)
+	}
+
+	var memberList []string
+	for _, node := range resp.Node.Nodes {
+		if node.Dir {
+			continue
+		}
+
+		memberInfo, err := BuildCheckInfoFromJSON(node.Value)
+		if err != nil {
+			env.logger.Println("BuildCheckInfoFromJSON(node.Value) error:", err)
+			continue
+		}
+		memberList = append(memberList, memberInfo.Localip)
+	}
+	env.logger.Println("Fetched latest membesrs:", memberList)
+
+	resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
+	if err == nil {
+		for _, node := range resp.Node.Nodes {
+			if node.Dir || !etcd.CheckInOrderKeyFormat(node.Key) {
+				env.logger.Println("error CheckInOrderKeyFormat or dir, skip:", node.Key)
+				continue
+			}
+
+			//if not in the memberlist, need to clear
+			if !utility.InSlice(memberList, node.Value) {
+				env.logger.Println("Endpoint ip "+node.Value+" is not in the memberlist, will be deleted, key:", node.Key)
+				resp, err = kvApi.Conn().Delete(etcd.Context(), node.Key, &client.DeleteOptions{Recursive: false, Dir: false})
+				if err != nil {
+					env.logger.Println("RemoveOutDateClusterMemberElection error delete key:", node.Key)
+				}
 			}
 		}
 	}

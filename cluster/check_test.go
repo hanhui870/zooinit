@@ -19,7 +19,7 @@ func TestCheckServiceTests(t *testing.T) {
 	}
 
 	str := "{\"name\":\"zookeeper-192.168.4.221\",\"update\":\"2016-03-18T16:09:43+08:00\",\"localip\":\"192.168.4.221\",\"hostname\":\"t221.alishui.com\",\"state\":true,\"failed\":0}"
-	unit, err := BuildFromJSON(str)
+	unit, err := BuildCheckInfoFromJSON(str)
 	if err != nil {
 		t.Error("error parse BuildFromJSON")
 	} else if unit.Localip != "192.168.4.221" {

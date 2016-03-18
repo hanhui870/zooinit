@@ -44,7 +44,7 @@ func (m *ClusterMember) IsHealth() bool {
 	return m.State
 }
 
-func BuildFromJSON(str string) (*ClusterMember, error) {
+func BuildCheckInfoFromJSON(str string) (*ClusterMember, error) {
 	var member ClusterMember
 
 	err := json.Unmarshal(bytes.NewBufferString(str).Bytes(), &member)
