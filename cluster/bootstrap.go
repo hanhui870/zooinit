@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -555,7 +556,13 @@ func makeClusterBooted() (bool, error) {
 	//flush last log info
 	defer env.logger.Sync()
 
-	file, err := os.OpenFile(getBootedFlagFile(), os.O_CREATE|os.O_APPEND|os.O_RDWR, log.DEFAULT_LOGFILE_MODE)
+	//create if nessary
+	err := os.MkdirAll(filepath.Dir(getBootedFlagFile()), log.DEFAULT_LOGDIR_MODE)
+	if err != nil {
+		return false, &os.PathError{"create dir", getBootedFlagFile(), err}
+	}
+
+	file, err := os.OpenFile(getBootedFlagFile(), os.O_CREATE|os.O_TRUNC|os.O_RDWR, log.DEFAULT_LOGFILE_MODE)
 	if err != nil {
 		return false, &os.PathError{"open", getBootedFlagFile(), err}
 	}

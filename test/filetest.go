@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
+
+	"zooinit/log"
 )
 
 func getBootedFlagFile() string {
@@ -14,7 +17,12 @@ func getBootedFlagFile() string {
 }
 
 func makeClusterBooted() (bool, error) {
-	file, err := os.OpenFile(getBootedFlagFile(), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0777)
+	err := os.MkdirAll(filepath.Dir(getBootedFlagFile()), log.DEFAULT_LOGDIR_MODE)
+	if err != nil {
+		return false, &os.PathError{"create dir", getBootedFlagFile(), err}
+	}
+
+	file, err := os.OpenFile(getBootedFlagFile(), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0777)
 	if err != nil {
 		return false, &os.PathError{"open", getBootedFlagFile(), err}
 	}
