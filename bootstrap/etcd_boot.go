@@ -130,6 +130,18 @@ func bootUpInternalEtcd() {
 	internalCmd.Stderr = loggerIOAdapter
 	err = internalCmd.Start()
 
+	// internal cmd wait
+	cmdWaitGroup.Add(1)
+	go func() {
+		defer cmdWaitGroup.Done()
+		err = internalCmd.Wait()
+		if err != nil {
+			env.logger.Println("internalCmd.Wait() finished with error found:", err)
+		} else {
+			env.logger.Println("internalCmd.Wait() finished without error.")
+		}
+	}()
+
 	if err != nil {
 		env.logger.Fatalln("Exec Internal ExecCmd Error:", err)
 	} else {
@@ -223,7 +235,7 @@ func bootstrapLocalClusterMember() {
 		env.logger.Println("Etcd member service ", env.GetClientUrl(), " started,  waiting to be bootrapped.")
 	}
 
-	// block until cluster is up
+	// here no block now, block in health check
 	cmdWaitGroup.Add(1)
 	go func() {
 		defer cmdWaitGroup.Done()
