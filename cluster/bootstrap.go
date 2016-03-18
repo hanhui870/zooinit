@@ -504,6 +504,9 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 				env.logger.Println("Cluster is checked up now, The status is normal.")
 				clusterUpdated = true
 
+				//mark cluster booted
+				makeClusterBooted()
+
 				// schedule to update discovery path ttl
 				go updateDiscoveryTTL()
 
