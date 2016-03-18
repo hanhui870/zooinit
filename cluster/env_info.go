@@ -97,7 +97,7 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 	keyNow = "log.path"
 	obj.logPath = config.GetValueString(keyNow, sec, c)
 	if obj.logPath == "" {
-		log.Fatalln("Config of log.path is empty.")
+		log.Fatalln("Config of log.path is empty, log to stdout also need.")
 	}
 
 	obj.clusterBackend = backend
