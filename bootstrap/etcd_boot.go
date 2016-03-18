@@ -190,6 +190,7 @@ func bootstrapLocalClusterMember() {
 	env.logger.Println("Etcd Discovery PeerUrl:", env.GetPeerUrl())
 	env.logger.Println("Etcd Discovery ClientUrl:", env.GetClientUrl())
 
+	// Etcd cluster can restart, because etcd restart don't need discovery service
 	disExecCmd := env.cmd + " --data-dir " + env.cmdDataDir + " -wal-dir " + env.cmdWalDir +
 		" -snapshot-count " + strconv.Itoa(env.cmdSnapCount) +
 		" -name " + "etcd.bootstrap." + env.localIP.String() +
