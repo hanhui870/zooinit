@@ -22,8 +22,7 @@ const (
 	INTERNAL_FINDPATH         = "/zooinit/boot"
 	CLUSTER_BOOTSTRAP_TIMEOUT = 5 * time.Minute
 
-	BOOTSTRAP_SERVICE_NAME           = "bootstrap"
-	DEFAULT_BOOTSTRAP_DISCOVERY_PATH = "/zooinit/discovery/cluster/" + BOOTSTRAP_SERVICE_NAME
+	DEFAULT_BOOTSTRAP_DISCOVERY_PATH = "/zooinit/discovery/cluster/" + cluster.BOOTSTRAP_SERVICE_NAME
 )
 
 var (

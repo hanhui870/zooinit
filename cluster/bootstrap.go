@@ -15,7 +15,6 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/coreos/etcd/client"
 
-	"zooinit/bootstrap"
 	"zooinit/cluster/etcd"
 	"zooinit/config"
 	"zooinit/log"
@@ -41,6 +40,9 @@ const (
 	CLUSTER_MEMBER_DIR = "/members"
 	// member node ttl
 	CLUSTER_MEMBER_NODE_TTL = 1 * time.Minute
+
+	// service name reserved for bootstrap
+	BOOTSTRAP_SERVICE_NAME = "bootstrap"
 
 	//Cluster member restart channel value type
 	MEMBER_RESTART_CMDWAIT     = 1
@@ -104,8 +106,8 @@ func Bootstrap(c *cli.Context) {
 	service = strings.Trim(service, " \t\n\r")
 	if service == "" {
 		syslog.Fatalln("Command args of service name is empty.")
-	} else if service == bootstrap.BOOTSTRAP_SERVICE_NAME {
-		syslog.Fatalln("Service name of \"" + bootstrap.BOOTSTRAP_SERVICE_NAME + "\" is reserved.")
+	} else if service == BOOTSTRAP_SERVICE_NAME {
+		syslog.Fatalln("Service name of \"" + BOOTSTRAP_SERVICE_NAME + "\" is reserved.")
 	}
 
 	// backend of servie
