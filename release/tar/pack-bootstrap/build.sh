@@ -35,7 +35,11 @@ mkdir -p output/zooinit-${Version}
 cp -a transfer/ output/zooinit-${Version}
 
 rm output/zooinit-${Version}.tar.gz
-tar -czf output/zooinit-${Version}.tar.gz output/zooinit-${Version}/
+
+# 需要cd到output目录.
+cd output
+tar -czf zooinit-${Version}.tar.gz zooinit-${Version}/
+cd -
 
 # upload file to hosts.
 cp output/zooinit-${Version}.tar.gz $FileServer
