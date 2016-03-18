@@ -31,10 +31,15 @@ axel http://docker.alishui.com/etcd-v2.2.2-linux-amd64.tar.gz && tar xzvf etcd-v
 # package go program return dir now
 echo -e "Will package go program into tar file...\nDir now:" `pwd`
 
-cp -a transfer/ outupt/zooinit-${Version}
-tar -czf outupt/zooinit-${Version}.tar.gz zooinit-${Version}/
+mkdir -p output/zooinit-${Version}
+cp -a transfer/ output/zooinit-${Version}
 
-#TODO upload file to hosts.
+rm output/zooinit-${Version}.tar.gz
+tar -czf output/zooinit-${Version}.tar.gz output/zooinit-${Version}/
+
+# upload file to hosts.
+cp output/zooinit-${Version}.tar.gz $FileServer
+echo "URL: http://docker.alishui.com/tmp/zooinit-${Version}.tar.gz"
 
 
 

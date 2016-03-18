@@ -11,4 +11,7 @@ ProjectPath=/Users/bruce/project/godev/src/zooinit
 ImageBuild="haimi:go-docker-dev"
 
 # Version now.
-Version=0.0.9
+Version=1.0.0
+
+# File server for download
+FileServer=/Users/bruce/ssd/software/docker-source/tmp
