@@ -1,7 +1,10 @@
 package cluster
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	syslog "log"
 	"math/rand"
 	"os"
@@ -187,20 +190,16 @@ func initializeClusterDiscoveryInfo() {
 
 			resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
 			if err == nil {
-				env.logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, ", will check whether in the nodelist...")
+				env.logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, ", will check whether restart needed.")
 
 				// fetch latest node list
-				nodeList, err := getLastestNodeList()
-				if err != nil {
-					env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_ELECTION_DIR+" lastest election nodes error:", err)
-				} else {
-					if utility.InSlice(nodeList, env.localIP.String()) {
-						env.logger.Println("Etcd.Api() local machine is in the nodelist:", env.localIP.String(), nodeList, ", will continue to restart...")
+				// Can not use ip for check, Docker restart may change ip.
+				if IsClusterBootedBefore() {
+					env.logger.Println("Zooinit has found cluster has started before, will continue to restart...")
 
-						clusterIsBootedBefore = true
-					} else {
-						env.logger.Fatalln("Etcd.Api() local machine is NOT in the nodelist:", env.localIP.String(), nodeList)
-					}
+					clusterIsBootedBefore = true
+				} else {
+					env.logger.Fatalln("Zooinit found cluster has NOT started before, it is not allowed to join a booted cluster.")
 				}
 
 			} else if !etcd.EqualEtcdError(err, client.ErrorCodeKeyNotFound) {
@@ -543,6 +542,50 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	}
 
 	return result, err
+}
+
+func getBootedFlagFile() string {
+	return env.logPath + "/booted"
+}
+
+func makeClusterBooted() (bool, error) {
+	//flush last log info
+	defer env.logger.Sync()
+
+	file, err := os.OpenFile(getBootedFlagFile(), os.O_CREATE|os.O_APPEND|os.O_RDWR, log.DEFAULT_LOGFILE_MODE)
+	if err != nil {
+		return false, &os.PathError{"open", getBootedFlagFile(), err}
+	}
+
+	defer file.Close()
+	n, err := file.Write(bytes.NewBufferString(time.Now().Format(time.RFC3339)).Bytes())
+	if err != nil {
+		return false, err
+	} else if n == 0 {
+		err = errors.New("Write 0 length content for makeClusterBooted()")
+		return false, err
+	}
+
+	return true, nil
+}
+
+func IsClusterBootedBefore() bool {
+	//flush last log info
+	defer env.logger.Sync()
+
+	file, err := os.Open(getBootedFlagFile())
+	if err == nil {
+		content, err := ioutil.ReadAll(file)
+		if err == nil {
+			ti, err := time.Parse(time.RFC3339, string(content))
+			if err == nil {
+				env.logger.Println("Cluster ever booted at:", ti.Format(time.RFC3339))
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // usage: go updateDiscoveryTTL()
