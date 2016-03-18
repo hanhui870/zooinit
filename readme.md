@@ -15,7 +15,8 @@
 
 ## Roadmap
 
-    1. TODO: Lately need to trigger reconfig cluster size
+    1. TODO: Lately need to trigger reconfig cluster size. Dynamic add or remove qurorum.
     2. TODO: Support service name command specified apart from backend name. 2016.03.14 done
     3. TODO: ELK and etc centralized logger facility support.
-    4. TODO: ip.hint can pass by cmd args.
+    4. TODO: ip.hint can pass by cmd args. 2016.03.17 done.
+
