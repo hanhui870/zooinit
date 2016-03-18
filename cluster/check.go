@@ -28,7 +28,11 @@ type ClusterMember struct {
 }
 
 func NewClusterMember(Name, Localip string, State bool, Failed int) *ClusterMember {
-	return &ClusterMember{Name: Name, Localip: Localip, State: State, Failed: Failed, Update: time.Now().Format(time.RFC3339), Hostname: os.Getenv("HOSTNAME")}
+	host, err := os.Hostname()
+	if err != nil {
+		host = Localip
+	}
+	return &ClusterMember{Name: Name, Localip: Localip, State: State, Failed: Failed, Update: time.Now().Format(time.RFC3339), Hostname: host}
 }
 
 func (m *ClusterMember) ToJson() string {
