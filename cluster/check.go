@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"time"
@@ -41,4 +42,15 @@ func (m *ClusterMember) ToJson() string {
 
 func (m *ClusterMember) IsHealth() bool {
 	return m.State
+}
+
+func BuildFromJSON(str string) (*ClusterMember, error) {
+	var member ClusterMember
+
+	err := json.Unmarshal(bytes.NewBufferString(str).Bytes(), &member)
+	if err != nil {
+		return nil, err
+	}
+
+	return &member, nil
 }

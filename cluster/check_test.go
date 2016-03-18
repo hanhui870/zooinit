@@ -25,4 +25,5 @@ func TestCheckServiceTests(t *testing.T) {
 	} else if unit.Localip != "192.168.4.221" {
 		t.Error("error parse BuildFromJSON, unit.Localip error.")
 	}
+	t.Log("Parsed value:", unit)
 }
