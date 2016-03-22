@@ -1,5 +1,5 @@
 # docker 下载地址
-Registry=registry.alishui.com:5000
+Registry=registry.alishui.com
 
 # docker 构建需要映射的目录
 VolumePath=/Users/bruce/
