@@ -289,13 +289,16 @@ func (e *envInfo) registerSignalWatch() {
 	defer e.logger.Sync()
 
 	sg := utility.NewSignalCatcher()
+	stack := utility.NewSignalCallStack()
+	sg.SetDefault(stack)
+	sg.EnableExit()
+
 	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {
 		defer e.logger.Sync()
 		e.logger.Println("Receive signal: " + sig.String() + " App will terminate, bye.")
 	}, nil)
+	stack.Add(call)
 
-	sg.SetDefault(call)
-	sg.EnableExit()
 	e.logger.Println("Init System SignalWatcher, catch list:", strings.Join(sg.GetSignalStringList(), ", "))
 
 	sg.RegisterAndServe()

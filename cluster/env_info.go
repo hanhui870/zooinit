@@ -280,14 +280,19 @@ func (e *envInfo) GetNodename() string {
 }
 
 func (e *envInfo) registerSignalWatch() {
-	sg := utility.NewSignalCatcher()
-	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {
-		e.logger.Println("Receive signal: " + sig.String() + " App will terminate, bye.")
-		e.logger.Sync()
-	}, nil)
+	defer e.logger.Sync()
 
-	sg.SetDefault(call)
+	sg := utility.NewSignalCatcher()
+	stack := utility.NewSignalCallStack()
+	sg.SetDefault(stack)
 	sg.EnableExit()
+
+	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {
+		defer e.logger.Sync()
+		e.logger.Println("Receive signal: " + sig.String() + " App will terminate, bye.")
+	}, nil)
+	stack.Add(call)
+
 	e.logger.Println("Init System SignalWatcher, catch list:", strings.Join(sg.GetSignalStringList(), ", "))
 
 	sg.RegisterAndServe()
