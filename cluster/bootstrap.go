@@ -609,15 +609,18 @@ func updateDiscoveryTTL() {
 	rand.Seed(time.Now().UnixNano())
 
 	//30-59s 随机更新一次,所有节点都会更新
+	failedTimes := 0
 	for {
 		kvApi := getClientKeysApi()
 
 		// Update TTL
 		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: env.timeout, PrevExist: client.PrevExist})
 		if err != nil {
-			env.logger.Fatalln("Etcd.Api() update "+env.discoveryPath+" TTL error:", err)
+			// Not exit.
+			env.logger.Println("Etcd.Api() update "+env.discoveryPath+" TTL error:", err, " faildTimes:", failedTimes)
 		} else {
 			env.logger.Println("Etcd.Api() update "+env.discoveryPath+" ok", "Resp:", resp)
+			failedTimes = 0
 		}
 
 		next := time.Duration(30 + rand.Intn(30))
@@ -640,20 +643,60 @@ func eventOnClusterBooted() {
 	}
 }
 
+// Check cluster health after cluster is up.
 func watchDogRunning() {
 	//flush last log info
 	defer env.logger.Sync()
 
 	//this can not use goroutine, this is a loop
 	firstRun := true
+	failedTimes := 0
 	for {
 		if isExit, ok := exitApp.Load().(bool); ok && isExit {
 			env.logger.Println("Receive exitApp signal, break watchDogRunning loop.")
 			break
 		}
 
-		execHealthChechRunning(firstRun)
-		//do not need break, because loop is maitained by zooinit
+		callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
+		if !firstRun {
+			// like exec health check, no need to debug env info every time.
+			callCmd.Env = append(callCmd.Env, "ZOOINIT_SILENT_ENV_INFO=true")
+		}
+
+		// may runtime error: invalid memory address or nil pointer dereference
+		cmdCallWaitProcessSync(callCmd)
+
+		var cm *ClusterMember
+		var result bool
+		// ttl 1min, update 1/s
+		if callCmd.ProcessState != nil && callCmd.ProcessState.Success() {
+			// when the health check call normal return, break the infinite loop
+			result = true
+			// reset to 0
+			execCheckFailedTimes = 0
+		} else {
+			result = false
+
+			// trigger restart related
+			execCheckFailedTimes++
+			if execCheckFailedTimes >= MEMBER_MAX_FAILED_TIMES {
+				env.logger.Println("Cluster member is NOT healthy, will trigger Restart. Failed times:", execCheckFailedTimes, ", MEMBER_MAX_FAILED_TIMES:", MEMBER_MAX_FAILED_TIMES)
+				execCheckFailedTimes = 0
+				restartMemberChannel <- MEMBER_RESTART_HEALTHCHECK
+			} else {
+				env.logger.Println("Cluster member is NOT healthy, Failed times:", execCheckFailedTimes)
+			}
+		}
+
+		cm = NewClusterMember(env.GetNodename(), env.localIP.String(), result, execCheckFailedTimes)
+		kvApi := getClientKeysApi()
+		pathNode := env.discoveryPath + CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
+		resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: CLUSTER_MEMBER_NODE_TTL})
+		if err != nil {
+			env.logger.Println("Etcd.Api() update "+pathNode+" State error:", err, " faildTimes:", failedTimes)
+		} else {
+			env.logger.Println("Etcd.Api() update "+pathNode+" ok", "Resp:", resp)
+		}
 
 		if firstRun {
 			firstRun = false
@@ -662,54 +705,6 @@ func watchDogRunning() {
 		// sleep interval time
 		time.Sleep(env.healthCheckInterval)
 	}
-}
-
-// Check cluster health after cluster is up.
-func execHealthChechRunning(firstRun bool) (result bool) {
-	//flush last log info
-	defer env.logger.Sync()
-
-	callCmd := getCallCmdInstance("OnHealthCheck: ", env.eventOnHealthCheck)
-	if !firstRun {
-		// like exec health check, no need to debug env info every time.
-		callCmd.Env = append(callCmd.Env, "ZOOINIT_SILENT_ENV_INFO=true")
-	}
-
-	// may runtime error: invalid memory address or nil pointer dereference
-	cmdCallWaitProcessSync(callCmd)
-
-	var cm *ClusterMember
-	// ttl 1min, update 1/s
-	if callCmd.ProcessState != nil && callCmd.ProcessState.Success() {
-		// when the health check call normal return, break the infinite loop
-		result = true
-		// reset to 0
-		execCheckFailedTimes = 0
-	} else {
-		result = false
-
-		// trigger restart related
-		execCheckFailedTimes++
-		if execCheckFailedTimes >= MEMBER_MAX_FAILED_TIMES {
-			env.logger.Println("Cluster member is NOT healthy, will trigger Restart. Failed times:", execCheckFailedTimes, ", MEMBER_MAX_FAILED_TIMES:", MEMBER_MAX_FAILED_TIMES)
-			execCheckFailedTimes = 0
-			restartMemberChannel <- MEMBER_RESTART_HEALTHCHECK
-		} else {
-			env.logger.Println("Cluster member is NOT healthy, Failed times:", execCheckFailedTimes)
-		}
-	}
-
-	cm = NewClusterMember(env.GetNodename(), env.localIP.String(), result, execCheckFailedTimes)
-	kvApi := getClientKeysApi()
-	pathNode := env.discoveryPath + CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
-	resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: CLUSTER_MEMBER_NODE_TTL})
-	if err != nil {
-		env.logger.Fatalln("Etcd.Api() update "+pathNode+" State error:", err)
-	} else {
-		env.logger.Println("Etcd.Api() update "+pathNode+" ok", "Resp:", resp)
-	}
-
-	return result
 }
 
 // Need to watch config size
