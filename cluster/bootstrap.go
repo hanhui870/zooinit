@@ -650,6 +650,7 @@ func watchDogRunning() {
 
 	//this can not use goroutine, this is a loop
 	firstRun := true
+	//failedTimes update to etcd
 	failedTimes := 0
 	for {
 		if isExit, ok := exitApp.Load().(bool); ok && isExit {
@@ -696,6 +697,7 @@ func watchDogRunning() {
 			env.logger.Println("Etcd.Api() update "+pathNode+" State error:", err, " faildTimes:", failedTimes)
 		} else {
 			env.logger.Println("Etcd.Api() update "+pathNode+" ok", "Resp:", resp)
+			failedTimes = 0
 		}
 
 		if firstRun {
