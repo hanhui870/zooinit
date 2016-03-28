@@ -346,8 +346,8 @@ func (e *envInfo) registerSignalWatch() {
 
 	sg := utility.NewSignalCatcher()
 	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {
+		defer e.logger.Sync()
 		e.logger.Println("Receive signal: " + sig.String() + " App will terminate, bye.")
-		e.logger.Sync()
 	}, nil)
 
 	sg.SetDefault(call)
