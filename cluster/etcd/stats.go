@@ -1,11 +1,11 @@
 package etcd
 
 import (
-	"net/url"
-	"net/http"
-	"errors"
-	"strconv"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"net/url"
+	"strconv"
 )
 
 /*
@@ -52,7 +52,6 @@ type StatLeader struct {
 type StatStore struct {
 }
 
-
 // client use offical etcd/client, has endpoints impl..
 type memberAction struct {
 	Prefix string
@@ -60,16 +59,11 @@ type memberAction struct {
 }
 
 func NewMemberAction() (m *memberAction) {
-	return &memberAction{Prefix:"v2", Key:"members"}
+	return &memberAction{Prefix: "v2", Key: "members"}
 }
 
-
 func (m *memberAction) HTTPRequest(url url.URL) *http.Request {
-	if m == nil {
-		return nil
-	}
-
-	req, _ := http.NewRequest("GET", url.String() + "/" + m.Prefix + "/" + m.Key, nil)
+	req, _ := http.NewRequest("GET", url.String()+"/"+m.Prefix+"/"+m.Key, nil)
 
 	return req
 }
@@ -77,8 +71,8 @@ func (m *memberAction) HTTPRequest(url url.URL) *http.Request {
 // A cluster Member
 type Member struct {
 	ClientURLs []string `json:"clientURLs"`
-	Id         string `json:"id"`
-	Name       string `json:"name"`
+	Id         string   `json:"id"`
+	Name       string   `json:"name"`
 	PeerURLs   []string `json:"peerURLs"`
 }
 
@@ -98,7 +92,7 @@ func unmarshalMembersResponse(code int, header http.Header, body []byte) (list *
 
 		if err != nil || list.Members == nil {
 			return nil, errors.New("Error /v2/member parse:" + string(body) + " " + err.Error())
-		}else {
+		} else {
 			return &list, nil
 		}
 

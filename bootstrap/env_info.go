@@ -234,114 +234,58 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 
 // Fetch bootstrap command
 func (e *envInfo) GetCmd() string {
-	if e == nil {
-		return ""
-	}
-
 	return e.cmd
 }
 
 func (e *envInfo) GetQurorum() int {
-	if e == nil {
-		return 0
-	}
-
 	return e.qurorum
 }
 
 func (e *envInfo) GetTimeout() time.Duration {
-	if e == nil {
-		return 0
-	}
-
 	return e.timeout
 }
 
 func (e *envInfo) Service() string {
-	if e == nil {
-		return ""
-	}
-
 	return e.service
 }
 
 func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
-	if e == nil {
-		return nil
-	}
-
 	return e.logger
 }
 
 func (e *envInfo) LocalIP() net.IP {
-	if e == nil {
-		return nil
-	}
-
 	return e.localIP
 }
 
 func (e *envInfo) GetDiscoveryHost() string {
-	if e == nil {
-		return ""
-	}
-
 	return e.discoveryHost
 }
 
 func (e *envInfo) GetDiscoveryPort() string {
-	if e == nil {
-		return ""
-	}
-
 	return e.discoveryPort
 }
 
 func (e *envInfo) GetInternalClientUrl() string {
-	if e == nil {
-		return ""
-	}
-
 	return "http://" + e.internalHost + ":" + e.internalPort
 }
 
 func (e *envInfo) GetInternalPeerUrl() string {
-	if e == nil {
-		return ""
-	}
-
 	return "http://" + e.internalHost + ":" + e.internalPeer
 }
 
 func (e *envInfo) GetClientUrl() string {
-	if e == nil {
-		return ""
-	}
-
 	return "http://" + env.localIP.String() + ":" + env.discoveryPort
 }
 
 func (e *envInfo) GetPeerUrl() string {
-	if e == nil {
-		return ""
-	}
-
 	return "http://" + env.localIP.String() + ":" + env.discoveryPeer
 }
 
 func (e *envInfo) GetNodename() string {
-	if e == nil {
-		return ""
-	}
-
 	return "Etcd-" + e.localIP.String()
 }
 
 func (e *envInfo) registerSignalWatch() {
-	if e == nil {
-		return
-	}
-
 	defer e.logger.Sync()
 
 	sg := utility.NewSignalCatcher()

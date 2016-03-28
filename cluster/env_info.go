@@ -256,18 +256,10 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 }
 
 func (e *envInfo) GetQurorum() int {
-	if e == nil {
-		return 0
-	}
-
 	return e.qurorum
 }
 
 func (e *envInfo) GetTimeout() time.Duration {
-	if e == nil {
-		return 0
-	}
-
 	return e.timeout
 }
 
@@ -280,26 +272,14 @@ func (e *envInfo) Service() string {
 }
 
 func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
-	if e == nil {
-		return nil
-	}
-
 	return e.logger
 }
 
 func (e *envInfo) GetNodename() string {
-	if e == nil {
-		return ""
-	}
-
 	return e.clusterBackend + "-" + e.localIP.String()
 }
 
 func (e *envInfo) registerSignalWatch() {
-	if e == nil {
-		return
-	}
-
 	sg := utility.NewSignalCatcher()
 	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {
 		e.logger.Println("Receive signal: " + sig.String() + " App will terminate, bye.")

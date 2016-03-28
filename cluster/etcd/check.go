@@ -2,10 +2,10 @@ package etcd
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"time"
-	"errors"
 )
 
 // An cluster server health check
@@ -26,11 +26,7 @@ func NewServerCheck(client, peer string) *ServerCheck {
 
 // check cluster is cluster
 func (s *ServerCheck) IsHealth() bool {
-	if s == nil {
-		return false
-	}
-
-	isHealthy, _:=CheckHealth(s.Client)
+	isHealthy, _ := CheckHealth(s.Client)
 
 	return isHealthy
 }
@@ -55,7 +51,7 @@ func CheckHealth(client string) (bool, error) {
 
 	err = json.Unmarshal(body, &heal)
 	if err != nil {
-		return false ,errors.New("Error /v2/json parse:" + string(body) +" "+ err.Error())
+		return false, errors.New("Error /v2/json parse:" + string(body) + " " + err.Error())
 	}
 
 	return heal.IsHealth(), nil
