@@ -31,7 +31,7 @@ func (s *SignalCallStack) Delete(handler *SignalCallback) (result bool) {
 }
 
 // Trigger action like defer, last in first trigger, NOT gurantee
-func (s *SignalCallStack) Trigger(sig os.Signal, wg sync.WaitGroup) {
+func (s *SignalCallStack) Trigger(sig os.Signal, wg *sync.WaitGroup) {
 	lenCall := len(s.handlers)
 
 	// index start from 0

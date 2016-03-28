@@ -30,7 +30,7 @@ type SignalCatcher struct {
 	handlers map[os.Signal]*SignalCallStack
 
 	// WaitGroup for goroutine to complete
-	wg sync.WaitGroup
+	wg *sync.WaitGroup
 
 	// Is exit after signal process
 	exitAfterCall bool
@@ -38,7 +38,8 @@ type SignalCatcher struct {
 
 func NewSignalCatcher() *SignalCatcher {
 	handlers := make(map[os.Signal]*SignalCallStack)
-	return &SignalCatcher{handlers: handlers, exitAfterCall: false}
+	wg := &sync.WaitGroup{}
+	return &SignalCatcher{handlers: handlers, exitAfterCall: false, wg: wg}
 }
 
 func NewSignalCallback(handler SignalHandler, data interface{}) *SignalCallback {

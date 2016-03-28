@@ -55,6 +55,7 @@ func TestSignalTest(t *testing.T) {
 	t.Log("catch list:", sg.GetSignalList())
 
 	t.Log("You can send signal in 10s..")
+	sg.EnableExit()
 	sg.RegisterAndServe()
 
 	time.Sleep(10 * time.Second)
