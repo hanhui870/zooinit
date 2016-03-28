@@ -26,10 +26,30 @@ func TestSignalTest(t *testing.T) {
 	}
 
 	sg := NewSignalCatcher()
-	call := NewSignalCallback(clean, "this is test cleanup")
-	sg.SetDefault(call)
-	usercall := NewSignalCallback(cleanup, "this is test cleanup")
-	sg.SetHandle([]os.Signal{syscall.SIGUSR1}, usercall)
+	call := NewSignalCallback(clean, "this is test DEFAULT cleanup")
+	stack := NewSignalCallStack()
+	sg.SetDefault(stack)
+	stack.Add(call)
+
+	stackFetch, err := sg.GetHandler(syscall.SIGINT)
+	if err != nil {
+		t.Error("Found error. Fetch sg.GetHandler(syscall.SIGINT) failed, ", err)
+	} else {
+		stackFetch.Add(NewSignalCallback(clean, "this is GetHandler cleanup"))
+	}
+
+	usercall := NewSignalCallback(cleanup, "this is test User cleanup")
+	_, err = sg.SetHandler([]os.Signal{syscall.SIGUSR1}, NewSignalCallStack())
+	if err != nil {
+		t.Error("Found error. Fetch sg.GetHandler(syscall.SIGUSR1) failed, ", err)
+	}
+
+	stackFetch2, err := sg.GetHandler(syscall.SIGUSR1)
+	if err != nil {
+		t.Error("Found error. Fetch sg.GetHandler(syscall.SIGUSR1) failed, ", err)
+	} else {
+		stackFetch2.Add(usercall)
+	}
 
 	t.Log("catch list:", sg.GetSignalList())
 

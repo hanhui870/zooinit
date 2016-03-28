@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"errors"
 	"os"
 	"os/signal"
 	"sync"
@@ -18,14 +19,15 @@ var (
 
 type SignalHandler func(sig os.Signal, arg interface{})
 type SignalCallback struct {
-	handle SignalHandler
-	data   interface{}
+	handler SignalHandler
+	data    interface{}
 }
 
 // Singal catch
 // 限制, 系统实现单个信号只能注册一个信号
+// 可以通过signal_callback实现单个信号执行多个callback
 type SignalCatcher struct {
-	handles map[os.Signal][]*SignalCallback
+	handlers map[os.Signal]*SignalCallStack
 
 	// WaitGroup for goroutine to complete
 	wg sync.WaitGroup
@@ -35,41 +37,44 @@ type SignalCatcher struct {
 }
 
 func NewSignalCatcher() *SignalCatcher {
-	handles := make(map[os.Signal][]*SignalCallback)
-	return &SignalCatcher{handles: handles, exitAfterCall: false}
+	handlers := make(map[os.Signal]*SignalCallStack)
+	return &SignalCatcher{handlers: handlers, exitAfterCall: false}
 }
 
-func NewSignalCallback(handle SignalHandler, data interface{}) *SignalCallback {
-	return &SignalCallback{handle: handle, data: data}
+func NewSignalCallback(handler SignalHandler, data interface{}) *SignalCallback {
+	return &SignalCallback{handler: handler, data: data}
 }
 
-func (s *SignalCatcher) SetDefault(handle *SignalCallback) bool {
-	if s == nil {
-		return false
-	}
-
-	return s.SetHandle(defaultSignalCatchSet, handle)
+func (s *SignalCatcher) SetDefault(handler *SignalCallStack) (bool, error) {
+	return s.SetHandler(defaultSignalCatchSet, handler)
 }
 
-func (s *SignalCatcher) SetHandle(sigs []os.Signal, handle *SignalCallback) bool {
-	if s == nil {
-		return false
+func (s *SignalCatcher) SetHandler(sigs []os.Signal, handler *SignalCallStack) (bool, error) {
+	for _, sig := range sigs {
+		if _, ok := s.handlers[sig]; ok {
+			return false, errors.New("SignalCallStack of sig:" + sig.String() + " is set, please refer SignalCallStack to manipulate.")
+		}
 	}
 
 	for _, sig := range sigs {
-		s.handles[sig] = append(s.handles[sig], handle)
+		s.handlers[sig] = handler
 	}
 
-	return true
+	return true, nil
+}
+
+func (s *SignalCatcher) GetHandler(sig os.Signal) (*SignalCallStack, error) {
+	handler, ok := s.handlers[sig]
+	if !ok {
+		return nil, errors.New("SignalCallStack of sig:" + sig.String() + " is NOT set.")
+	}
+
+	return handler, nil
 }
 
 func (s *SignalCatcher) GetSignalList() []os.Signal {
-	if s == nil {
-		return nil
-	}
-
 	var list []os.Signal
-	for sig, _ := range s.handles {
+	for sig, _ := range s.handlers {
 		list = append(list, sig)
 	}
 
@@ -77,12 +82,8 @@ func (s *SignalCatcher) GetSignalList() []os.Signal {
 }
 
 func (s *SignalCatcher) GetSignalStringList() []string {
-	if s == nil {
-		return nil
-	}
-
 	var list []string
-	for sig, _ := range s.handles {
+	for sig, _ := range s.handlers {
 		list = append(list, sig.String())
 	}
 
@@ -91,20 +92,8 @@ func (s *SignalCatcher) GetSignalStringList() []string {
 
 // internal signal process handle
 func (s *SignalCatcher) handle(sig os.Signal) {
-	if s == nil {
-		return
-	}
-
-	if calllist, ok := s.handles[sig]; ok {
-		for _, call := range calllist {
-			//wait group
-			s.wg.Add(1)
-
-			go func() {
-				defer s.wg.Done()
-				call.handle(sig, call.data)
-			}()
-		}
+	if callStack, ok := s.handlers[sig]; ok {
+		callStack.Trigger(sig, s.wg)
 	}
 }
 
@@ -130,25 +119,13 @@ func (s *SignalCatcher) RegisterAndServe() {
 
 // whether IsExitEnable
 func (s *SignalCatcher) IsExit() bool {
-	if s == nil {
-		return false
-	}
-
 	return s.exitAfterCall
 }
 
 func (s *SignalCatcher) EnableExit() {
-	if s == nil {
-		return
-	}
-
 	s.exitAfterCall = SIGNAL_HANDLE_EXIT
 }
 
 func (s *SignalCatcher) DisableExit() {
-	if s == nil {
-		return
-	}
-
 	s.exitAfterCall = SIGNAL_HANDLE_NOEXIT
 }
