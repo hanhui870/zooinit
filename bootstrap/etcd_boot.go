@@ -311,63 +311,55 @@ func watchDogRunning() {
 	//flush last log info
 	defer env.logger.Sync()
 
+	//failedTimes update to etcd
+	failedTimes := 0
 	for {
 		if isExit, ok := exitApp.Load().(bool); ok && isExit {
 			env.logger.Println("Receive exitApp signal, break watchDogRunning loop.")
 			break
 		}
 
-		execHealthChechRunning()
-		//do not need break, because loop is maitained by zooinit
+		var cm *cluster.ClusterMember
+		var result bool
+		isHealthy, err := etcd.CheckHealth(env.GetClientUrl())
+		// ttl 1min, update 1/s
+		if err == nil && isHealthy {
+			// when the health check call normal return, break the infinite loop
+			result = true
+			// reset to 0
+			execCheckFailedTimes = 0
+		} else {
+			result = false
+			// trigger restart related
+			execCheckFailedTimes++
+
+			if err != nil {
+				env.logger.Println("Found error while etcd.CheckHealth("+env.GetClientUrl()+"):", err)
+			}
+
+			if execCheckFailedTimes >= cluster.MEMBER_MAX_FAILED_TIMES {
+				env.logger.Println("Cluster member is NOT healthy, will trigger Restart. Failed times:", execCheckFailedTimes, ", MEMBER_MAX_FAILED_TIMES:", cluster.MEMBER_MAX_FAILED_TIMES)
+				execCheckFailedTimes = 0
+				restartMemberChannel <- cluster.MEMBER_RESTART_HEALTHCHECK
+			} else {
+				env.logger.Println("Cluster member is NOT healthy, Failed times:", execCheckFailedTimes)
+			}
+		}
+
+		kvApi := getClientKeysApi()
+		cm = cluster.NewClusterMember(env.GetNodename(), env.localIP.String(), result, execCheckFailedTimes)
+		pathNode := DEFAULT_BOOTSTRAP_DISCOVERY_PATH + cluster.CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
+		resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: cluster.CLUSTER_MEMBER_NODE_TTL})
+		if err != nil {
+			env.logger.Println("Etcd.Api() update "+pathNode+" State error:", err, " faildTimes:", failedTimes)
+		} else {
+			env.logger.Println("Etcd.Api() update "+pathNode+" ok", "Resp:", resp)
+			failedTimes = 0
+		}
 
 		// sleep interval time
 		time.Sleep(env.healthCheckInterval)
 	}
-}
-
-// Check cluster health after cluster is up.
-func execHealthChechRunning() (result bool) {
-	//flush last log info
-	defer env.logger.Sync()
-
-	var cm *cluster.ClusterMember
-
-	isHealthy, err := etcd.CheckHealth(env.GetClientUrl())
-	// ttl 1min, update 1/s
-	if err == nil && isHealthy {
-		// when the health check call normal return, break the infinite loop
-		result = true
-		// reset to 0
-		execCheckFailedTimes = 0
-	} else {
-		result = false
-		// trigger restart related
-		execCheckFailedTimes++
-
-		if err != nil {
-			env.logger.Println("Found error while etcd.CheckHealth("+env.GetClientUrl()+"):", err)
-		}
-
-		if execCheckFailedTimes >= cluster.MEMBER_MAX_FAILED_TIMES {
-			env.logger.Println("Cluster member is NOT healthy, will trigger Restart. Failed times:", execCheckFailedTimes, ", MEMBER_MAX_FAILED_TIMES:", cluster.MEMBER_MAX_FAILED_TIMES)
-			execCheckFailedTimes = 0
-			restartMemberChannel <- cluster.MEMBER_RESTART_HEALTHCHECK
-		} else {
-			env.logger.Println("Cluster member is NOT healthy, Failed times:", execCheckFailedTimes)
-		}
-	}
-
-	kvApi := getClientKeysApi()
-	cm = cluster.NewClusterMember(env.GetNodename(), env.localIP.String(), result, execCheckFailedTimes)
-	pathNode := DEFAULT_BOOTSTRAP_DISCOVERY_PATH + cluster.CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
-	resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: cluster.CLUSTER_MEMBER_NODE_TTL})
-	if err != nil {
-		env.logger.Fatalln("Etcd.Api() update "+pathNode+" State error:", err)
-	} else {
-		env.logger.Println("Etcd.Api() update "+pathNode+" ok", "Resp:", resp)
-	}
-
-	return result
 }
 
 func getClientKeysApi() *etcd.ApiKeys {
