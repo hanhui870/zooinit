@@ -31,6 +31,7 @@ func TestSignalTest(t *testing.T) {
 	sg.SetDefault(stack)
 	stack.Add(call)
 
+	// The same handler will affect all signal.
 	stackFetch, err := sg.GetHandler(syscall.SIGINT)
 	if err != nil {
 		t.Error("Found error. Fetch sg.GetHandler(syscall.SIGINT) failed, ", err)
