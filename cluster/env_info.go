@@ -59,6 +59,9 @@ type envInfo struct {
 
 	// app start up configuration, app can fetch through env variables
 	config map[string]string
+
+	// Term Signal catcher
+	sc *utility.SignalCatcher
 }
 
 // New env from file
@@ -294,6 +297,9 @@ func (e *envInfo) registerSignalWatch() {
 	stack.Add(call)
 
 	e.logger.Println("Init System SignalWatcher, catch list:", strings.Join(sg.GetSignalStringList(), ", "))
+
+	//register
+	e.sc = sg
 
 	sg.RegisterAndServe()
 }

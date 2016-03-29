@@ -64,6 +64,9 @@ type envInfo struct {
 
 	// Health check interval, default 2 sec, same to zookeeper ticktime.
 	healthCheckInterval time.Duration
+
+	// Term Signal catcher
+	sc *utility.SignalCatcher
 }
 
 // New env from file
@@ -300,6 +303,9 @@ func (e *envInfo) registerSignalWatch() {
 	stack.Add(call)
 
 	e.logger.Println("Init System SignalWatcher, catch list:", strings.Join(sg.GetSignalStringList(), ", "))
+
+	//register
+	e.sc = sg
 
 	sg.RegisterAndServe()
 }
