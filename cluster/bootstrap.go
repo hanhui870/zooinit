@@ -122,6 +122,8 @@ func Bootstrap(c *cli.Context) {
 
 	env = NewEnvInfo(iniobj, backend, service, c)
 
+	GuaranteeSingleRun(env)
+
 	//flush last log info
 	defer env.logger.Sync()
 	//register signal watcher

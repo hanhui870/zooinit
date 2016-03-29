@@ -22,6 +22,9 @@ type envInfo struct {
 	//service name, also use for log
 	service string
 
+	//Pid file path
+	pidPath string
+
 	// Bootstrap etcd cluster service for boot other cluster service.
 	discoveryHost string
 	discoveryPort string
@@ -87,6 +90,12 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 
 	// key for process now
 	var keyNow string
+
+	keyNow = "pid.path"
+	obj.pidPath = config.GetValueString(keyNow, sec, c)
+	if obj.pidPath == "" {
+		log.Fatalln("Config of " + keyNow + " is empty.")
+	}
 
 	keyNow = "log.channel"
 	obj.logChannel = config.GetValueString(keyNow, sec, c)
@@ -286,6 +295,11 @@ func (e *envInfo) GetPeerUrl() string {
 
 func (e *envInfo) GetNodename() string {
 	return "Etcd-" + e.localIP.String()
+}
+
+// Get Pid file path
+func (e *envInfo) GetPidPath() string {
+	return e.pidPath
 }
 
 func (e *envInfo) registerSignalWatch() {

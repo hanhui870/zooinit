@@ -21,6 +21,8 @@ type envInfo struct {
 	service string
 	// Cluster power backend
 	clusterBackend string
+	//Pid file path
+	pidPath string
 
 	// Bootstrap etcd cluster service for boot other cluster service.
 	discoveryMethod string
@@ -90,6 +92,12 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 
 	// key for process now
 	var keyNow string
+
+	keyNow = "pid.path"
+	obj.pidPath = config.GetValueString(keyNow, sec, c)
+	if obj.pidPath == "" {
+		log.Fatalln("Config of " + keyNow + " is empty.")
+	}
 
 	keyNow = "log.channel"
 	obj.logChannel = config.GetValueString(keyNow, sec, c)
@@ -280,6 +288,11 @@ func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
 
 func (e *envInfo) GetNodename() string {
 	return e.clusterBackend + "-" + e.localIP.String()
+}
+
+// Get Pid file path
+func (e *envInfo) GetPidPath() string {
+	return e.pidPath
 }
 
 func (e *envInfo) registerSignalWatch() {

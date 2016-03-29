@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/codegangsta/cli"
 
+	"zooinit/cluster"
 	"zooinit/config"
 )
 
@@ -19,6 +20,8 @@ func Bootstrap(c *cli.Context) {
 	iniobj := config.GetConfigInstance(fname)
 
 	env = NewEnvInfo(iniobj, c)
+
+	cluster.GuaranteeSingleRun(env)
 
 	//register signal watcher
 	env.registerSignalWatch()

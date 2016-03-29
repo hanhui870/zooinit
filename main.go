@@ -53,6 +53,12 @@ func main() {
 		Usage: "Configuration of runtime log path.",
 	}
 
+	pidPath := &cli.StringFlag{
+		Name:  "pid.path, pid",
+		Value: "",
+		Usage: "Configuration of runtime log path.",
+	}
+
 	// Used for cluster
 	backendFlag := &cli.StringFlag{
 		Name:  "backend, b",
@@ -142,7 +148,7 @@ func main() {
 			Flags: []cli.Flag{
 				discovery, internal, internalData, internalWal,
 				bootcmd, bootData, bootWal, bootSnap,
-				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath,
+				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath, pidPath,
 			},
 		},
 		{
@@ -151,7 +157,7 @@ func main() {
 			Action: cluster.Bootstrap,
 			Flags: []cli.Flag{
 				backendFlag, ipHint, discoverMethod, discoverTarget, discoverPathPrefix,
-				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath,
+				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath, pidPath,
 			},
 		},
 	}
