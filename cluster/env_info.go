@@ -295,6 +295,10 @@ func (e *envInfo) GetPidPath() string {
 	return e.pidPath
 }
 
+func (e *envInfo) LocalIP() net.IP {
+	return e.localIP
+}
+
 func (e *envInfo) registerSignalWatch() {
 	defer e.logger.Sync()
 
