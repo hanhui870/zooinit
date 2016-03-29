@@ -412,6 +412,7 @@ func clusterMemberRestartRoutine() {
 	//flush last log info
 	defer env.logger.Sync()
 
+	restartTimes := 0
 	for {
 		select {
 		case trigger := <-restartMemberChannel:
@@ -430,6 +431,15 @@ func clusterMemberRestartRoutine() {
 			} else {
 				env.logger.Println("Fetch error restartMemberChannel value:", trigger)
 			}
+
+			// restart frequency control
+			if restartTimes > 60 {
+				restartTimes = 1 // reset
+			}
+			timeToSleep := time.Duration(restartTimes) * time.Second
+			env.logger.Println("Will sleep " + timeToSleep.String() + " continue to restart member...")
+			time.Sleep(timeToSleep)
+			restartTimes++
 
 			//ProcessState stores information about a process, as reported by Wait.
 			if clusterCmd.ProcessState != nil {
