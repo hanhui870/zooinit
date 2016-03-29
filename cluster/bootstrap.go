@@ -150,14 +150,14 @@ func Bootstrap(c *cli.Context) {
 	// start up local node
 	bootstrapLocalClusterMember()
 
+	//must before watchDogRunning, can before cluster is up.
+	go clusterMemberRestartRoutine()
+
 	// Will block
 	loopUntilClusterIsUp(env.timeout)
 
 	// Apart from watch dog running
 	eventOnClusterBooted()
-
-	//must before watchDogRunning
-	go clusterMemberRestartRoutine()
 
 	// watch and check cluster health [watchdog], block until server receive term signal
 	watchDogRunning()
