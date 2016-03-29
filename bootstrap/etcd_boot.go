@@ -44,11 +44,15 @@ var (
 	// Discovery service latest endpoints
 	lastestEndpoints  []string
 	endpointsSyncLock sync.Mutex
+
+	// Whether cluster is booted and healthy
+	clusterUpdated bool
 )
 
 func init() {
 	// init channel
 	restartMemberChannel = make(chan int)
+	clusterUpdated = false
 }
 
 func BootstrapEtcd(env *envInfo) {
@@ -73,13 +77,13 @@ func BootstrapEtcd(env *envInfo) {
 	// Boot local cluster member
 	bootstrapLocalClusterMember()
 
+	//must before watchDogRunning, can before cluster is up.
+	go clusterMemberRestartRoutine()
+
 	checkDiscoveryClusterIsUp()
 
 	// Up and fetch latest endpoints.
 	UpdateLatestEndpoints()
-
-	//must before watchDogRunning
-	go clusterMemberRestartRoutine()
 
 	// watch and check cluster health [watchdog], block until server receive term signal
 	// check cluster bootstraped and register memberself
@@ -134,6 +138,13 @@ func bootUpInternalEtcd() {
 	cmdWaitGroup.Add(1)
 	go func() {
 		defer cmdWaitGroup.Done()
+		//promise kill sub process
+		defer func() {
+			if internalCmd.Process != nil {
+				internalCmd.Process.Kill()
+			}
+		}()
+
 		err = internalCmd.Wait()
 		if err != nil {
 			env.logger.Println("internalCmd.Wait() finished with error found:", err)
@@ -239,6 +250,13 @@ func bootstrapLocalClusterMember() {
 	cmdWaitGroup.Add(1)
 	go func() {
 		defer cmdWaitGroup.Done()
+		//promise kill sub process
+		defer func() {
+			if clusterCmd.Process != nil {
+				clusterCmd.Process.Kill()
+			}
+		}()
+
 		err = clusterCmd.Wait()
 		if err != nil {
 			env.logger.Println("callCmd.Wait() finished with error found:", err)
@@ -247,6 +265,7 @@ func bootstrapLocalClusterMember() {
 		}
 
 		if isExit, ok := exitApp.Load().(bool); !ok || !isExit {
+
 			env.logger.Println("BootstrapLocalClusterMember do not detect exitApp cmd, will restart...")
 			restartMemberChannel <- cluster.MEMBER_RESTART_CMDWAIT
 		}
@@ -268,6 +287,8 @@ func checkDiscoveryClusterIsUp() {
 		env.logger.Fatal("Error check discovery server health: ", isHealth)
 		env.logger.Fatal("Cluster bootstrap faild: failed to bootstrap in ", env.timeout.String())
 	}
+
+	clusterUpdated = true
 
 	// Close internal service
 	env.logger.Println("Cluster etcd service is booted. Internal service is going to be terminated.")
