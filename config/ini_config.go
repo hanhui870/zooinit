@@ -1,10 +1,12 @@
 package config
 
 import (
+	"log"
+	"os"
+	"path"
+
 	"github.com/codegangsta/cli"
 	"github.com/go-ini/ini"
-
-	"log"
 )
 
 func Ini(path string) *ini.File {
@@ -13,7 +15,31 @@ func Ini(path string) *ini.File {
 		log.Fatalln(err)
 	}
 
+	ReloadWorkDir(cfg, "system")
+
 	return cfg
+}
+
+func ReloadWorkDir(cfg *ini.File, section string) error {
+	sec, err := cfg.GetSection(section)
+	if err != nil {
+		return err
+	}
+
+	// if pwd last part is bin, will use parent
+	dirKey := sec.Key("work.dir")
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	if path.Base(wd) == "bin" {
+		wd = path.Dir(wd)
+	}
+
+	dirKey.SetValue(wd)
+
+	return nil
 }
 
 func GetValueString(keyNow string, sec *ini.Section, c *cli.Context) string {
