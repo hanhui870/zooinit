@@ -859,7 +859,7 @@ func removeOutDateClusterMemberElectionAndUUIDCheck() {
 		env.Logger.Fatalln("Failed to call getClusterBootedUUIDs:", err)
 	}
 	if !utility.InSlice(uuidList, env.UUID) {
-		env.Logger.Fatalln("Endpoint uuid " + em.Uuid + " is not in the booted uuidList, will give up reboot and terminate.")
+		env.Logger.Fatalln("Endpoint uuid " + env.UUID + " is not in the booted uuidList, will give up reboot and terminate.")
 	}
 
 	kvApi := getClientKeysApi()

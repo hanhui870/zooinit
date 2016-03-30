@@ -52,7 +52,7 @@ func getLastestNodeIPList() ([]string, []string, error) {
 
 	list, err := getLastestNodeList()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var nodeList []string
