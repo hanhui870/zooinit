@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -41,6 +42,12 @@ func GuaranteeSingleRun(env Env) {
 	pid := env.GetPidPath() + "/" + env.GetService() + ".pid"
 
 	env.GetLogger().Println("Write and lock pid file:", pid)
+
+	//pid create dir if needed
+	err := os.MkdirAll(filepath.Dir(pid), loglocal.DEFAULT_LOGDIR_MODE)
+	if err != nil {
+		env.GetLogger().Fatalln("Create pid dir error, info:", err)
+	}
 
 	// O_EXCL used with O_CREATE, file must not exist
 	file, err := os.OpenFile(pid, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
