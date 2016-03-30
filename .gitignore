@@ -4,6 +4,7 @@
 *.tmp
 *.memprof
 *.pprof
+*.log
 pkg
 bin
 main

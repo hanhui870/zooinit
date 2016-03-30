@@ -125,20 +125,20 @@ func Bootstrap(c *cli.Context) {
 	GuaranteeSingleRun(env)
 
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 	//register signal watcher
-	env.registerSignalWatch()
+	env.RegisterSignalWatch()
 
-	env.logger.Println("Logger channel:", env.logChannel)
-	if env.logChannel != log.LOG_STDOUT {
-		env.logger.Println("Logger path:", env.logPath)
+	env.Logger.Println("Logger channel:", env.LogChannel)
+	if env.LogChannel != log.LOG_STDOUT {
+		env.Logger.Println("Logger path:", env.LogPath)
 	}
-	env.logger.Println("Timeout:", env.timeout.String())
-	env.logger.Println("Qurorum:", env.qurorum)
-	env.logger.Println("Discover method:", env.discoveryMethod)
-	env.logger.Println("Discover path:", env.discoveryPath)
-	env.logger.Println("Health check interval:", env.healthCheckInterval)
-	env.logger.Println("env.discoveryTarget for fetch members:", env.discoveryTarget)
+	env.Logger.Println("Timeout:", env.Timeout.String())
+	env.Logger.Println("Qurorum:", env.Qurorum)
+	env.Logger.Println("Discover method:", env.discoveryMethod)
+	env.Logger.Println("Discover path:", env.discoveryPath)
+	env.Logger.Println("Health check interval:", env.HealthCheckInterval)
+	env.Logger.Println("env.discoveryTarget for fetch members:", env.discoveryTarget)
 
 	// update endpoints
 	UpdateLatestEndpoints()
@@ -156,7 +156,7 @@ func Bootstrap(c *cli.Context) {
 	go clusterMemberRestartRoutine()
 
 	// Will block
-	loopUntilClusterIsUp(env.timeout)
+	loopUntilClusterIsUp(env.Timeout)
 
 	// Apart from watch dog running
 	eventOnClusterBooted()
@@ -166,7 +166,7 @@ func Bootstrap(c *cli.Context) {
 
 	// final wait.
 	cmdWaitGroup.Wait()
-	env.logger.Println("App runtime reaches end.")
+	env.Logger.Println("App runtime reaches end.")
 }
 
 // Fetch bootstrap env instance
@@ -177,52 +177,52 @@ func GetEnvInfo() *envInfo {
 // init cluster bootstrap info
 func initializeClusterDiscoveryInfo() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	kvApi := getClientKeysApi()
 
 	// Set qurorum size
-	resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: env.timeout, PrevExist: client.PrevNoExist})
+	resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: env.Timeout, PrevExist: client.PrevNoExist})
 	if err != nil {
 		//ignore exist error
 		if !etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
 			// check if exist need to add qurorum
-			env.logger.Fatalln("Etcd.Api() set "+env.discoveryPath+" error:", err)
+			env.Logger.Fatalln("Etcd.Api() set "+env.discoveryPath+" error:", err)
 		} else {
-			env.logger.Println("Etcd.Api() set " + env.discoveryPath + " notice: node exist, will add qurorum directly.")
+			env.Logger.Println("Etcd.Api() set " + env.discoveryPath + " notice: node exist, will add qurorum directly.")
 
 			resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
 			if err == nil {
-				env.logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, ", will check whether restart needed.")
+				env.Logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, ", will check whether restart needed.")
 
 				// fetch latest node list
 				// Can not use ip for check, Docker restart may change ip.
 				if IsClusterBootedBefore() {
-					env.logger.Println("Zooinit has found cluster has started before, will continue to restart...")
+					env.Logger.Println("Zooinit has found cluster has started before, will continue to restart...")
 
 					//remove /election out dated item compare to /members
 					removeOutDateClusterMemberElection()
 
 					clusterIsBootedBefore = true
 				} else {
-					env.logger.Fatalln("Zooinit found cluster has NOT started before, it is not allowed to join a booted cluster.")
+					env.Logger.Fatalln("Zooinit found cluster has NOT started before, it is not allowed to join a booted cluster.")
 				}
 
 			} else if !etcd.EqualEtcdError(err, client.ErrorCodeKeyNotFound) {
-				env.logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
+				env.Logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
 			}
 		}
 
 	} else {
 		// Create success, set config
-		env.logger.Println("Etcd.Api() set "+env.discoveryPath+" ok, TTL:", env.timeout.String(), resp)
+		env.Logger.Println("Etcd.Api() set "+env.discoveryPath+" ok, TTL:", env.Timeout.String(), resp)
 
 		// Set config size
-		resp, err = kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_SIZE, strconv.Itoa(env.qurorum), &client.SetOptions{PrevExist: client.PrevNoExist})
+		resp, err = kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_SIZE, strconv.Itoa(env.Qurorum), &client.SetOptions{PrevExist: client.PrevNoExist})
 		if err != nil {
-			env.logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
+			env.Logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
 		} else {
-			env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_SIZE+" ok, Qurorum size:", env.qurorum, resp)
+			env.Logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_SIZE+" ok, Qurorum size:", env.Qurorum, resp)
 		}
 	}
 
@@ -233,11 +233,11 @@ func initializeClusterDiscoveryInfo() {
 	}
 
 	// Create qurorum in order node
-	resp, err = kvApi.Conn().CreateInOrder(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, env.localIP.String(), nil)
+	resp, err = kvApi.Conn().CreateInOrder(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, env.LocalIP.String(), nil)
 	if err != nil {
-		env.logger.Fatalln("Etcd.Api() CreateInOrder error:", err)
+		env.Logger.Fatalln("Etcd.Api() CreateInOrder error:", err)
 	} else {
-		env.logger.Println("Etcd.Api() CreateInOrder ok:", resp)
+		env.Logger.Println("Etcd.Api() CreateInOrder ok:", resp)
 
 		// init create in order latestIndex
 		latestIndex = resp.Node.CreatedIndex - 1
@@ -254,15 +254,15 @@ func initializeClusterDiscoveryInfo() {
 
 func UpdateLatestEndpoints() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	memApi := getClientMembersApi(strings.Split(env.discoveryTarget, ","))
 
 	tmpEndpoints, err := memApi.GetInitialClusterEndpoints()
 	if err != nil {
-		env.logger.Fatalln("Etcd.GetInitialClusterEndpoints() found error:", err)
+		env.Logger.Fatalln("Etcd.GetInitialClusterEndpoints() found error:", err)
 	}
-	env.logger.Println("Fetch discovery service latest endpoints:", tmpEndpoints)
+	env.Logger.Println("Fetch discovery service latest endpoints:", tmpEndpoints)
 
 	// lock for update
 	endpointsSyncLock.Lock()
@@ -272,7 +272,7 @@ func UpdateLatestEndpoints() {
 
 func loopUntilQurorumIsReached() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	kvApi := getClientKeysApi()
 
@@ -280,7 +280,7 @@ func loopUntilQurorumIsReached() {
 	if !clusterIsBootedBefore {
 		resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
 		if err != nil {
-			env.logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_ELECTION_DIR+" lastest ModifiedIndex error:", err)
+			env.Logger.Fatalln("Etcd.Api() get "+env.discoveryPath+CLUSTER_ELECTION_DIR+" lastest ModifiedIndex error:", err)
 
 		} else {
 			latestIndex = resp.Node.ModifiedIndex - 1 // latestIndex-1 for check unitial change
@@ -301,24 +301,24 @@ func loopUntilQurorumIsReached() {
 		wather := kvApi.Conn().Watcher(env.discoveryPath+CLUSTER_ELECTION_DIR, &client.WatcherOptions{Recursive: true, AfterIndex: latestIndex})
 		resp, err := wather.Next(etcd.Context())
 		if err != nil {
-			env.logger.Fatalln("Etcd.Watcher() watch "+env.discoveryPath+CLUSTER_ELECTION_DIR+" error:", err)
+			env.Logger.Fatalln("Etcd.Watcher() watch "+env.discoveryPath+CLUSTER_ELECTION_DIR+" error:", err)
 
 		} else {
 			latestIndex = resp.Node.ModifiedIndex
-			env.logger.Println("Get last ModifiedIndex of watch:", latestIndex)
+			env.Logger.Println("Get last ModifiedIndex of watch:", latestIndex)
 		}
 
 		// fetch latest node list
 		nodeList, err := getLastestNodeList()
 		if err != nil {
-			env.logger.Println("Etcd.Api() get "+env.discoveryPath+CLUSTER_ELECTION_DIR+" lastest election nodes error:", err)
-			env.logger.Println("Will exit now...")
+			env.Logger.Println("Etcd.Api() get "+env.discoveryPath+CLUSTER_ELECTION_DIR+" lastest election nodes error:", err)
+			env.Logger.Println("Will exit now...")
 
 			//Need to expecility exit
 			//Sleep for finish action at watchQurorumSize()
 			for {
 				if isExit, ok := exitApp.Load().(bool); ok && isExit {
-					env.logger.Println("Wait completed, bye...")
+					env.Logger.Println("Wait completed, bye...")
 					os.Exit(0)
 				}
 
@@ -326,14 +326,14 @@ func loopUntilQurorumIsReached() {
 			}
 
 		} else {
-			env.logger.Println("Get election qurorum size, after remove duplicates:", len(nodeList), "members:", nodeList)
+			env.Logger.Println("Get election qurorum size, after remove duplicates:", len(nodeList), "members:", nodeList)
 
 			if len(nodeList) >= qurorumSize {
 				membersSyncLock.Lock()
 				membersElected = nodeList[:qurorumSize]
 				membersSyncLock.Unlock()
 
-				env.logger.Println("Get election qurorum finished:", membersElected)
+				env.Logger.Println("Get election qurorum finished:", membersElected)
 
 				// Call script
 				if env.eventOnReachQurorumNum != "" {
@@ -348,7 +348,7 @@ func loopUntilQurorumIsReached() {
 
 func getLastestNodeList() ([]string, error) {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	kvApi := getClientKeysApi()
 
@@ -371,12 +371,12 @@ func getLastestNodeList() ([]string, error) {
 
 func bootstrapLocalClusterMember() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
-	env.logger.Println("Started to boot Local cluster member, local ip:", env.localIP.String())
+	env.Logger.Println("Started to boot Local cluster member, local ip:", env.LocalIP.String())
 
-	if !utility.InSlice(membersElected, env.localIP.String()) {
-		env.logger.Fatalln("BootstrapLocalClusterMember error, localip is not in the elected list.")
+	if !utility.InSlice(membersElected, env.LocalIP.String()) {
+		env.Logger.Fatalln("BootstrapLocalClusterMember error, localip is not in the elected list.")
 	}
 
 	// Call script block
@@ -389,7 +389,7 @@ func bootstrapLocalClusterMember() {
 	callCmdStartInstance = getCallCmdInstance("OnStart: ", env.eventOnStart)
 	err := callCmdStartInstance.Start()
 	if err != nil {
-		env.logger.Println("callCmd.Start() error found:", err)
+		env.Logger.Println("callCmd.Start() error found:", err)
 	}
 
 	// block until cluster is up
@@ -398,13 +398,13 @@ func bootstrapLocalClusterMember() {
 		defer cmdWaitGroup.Done()
 		err = callCmdStartInstance.Wait()
 		if err != nil {
-			env.logger.Println("callCmd.Wait() finished with error found:", err)
+			env.Logger.Println("callCmd.Wait() finished with error found:", err)
 		} else {
-			env.logger.Println("callCmd.Wait() finished without error.")
+			env.Logger.Println("callCmd.Wait() finished without error.")
 		}
 
 		if isExit, ok := exitApp.Load().(bool); !ok || !isExit {
-			env.logger.Println("BootstrapLocalClusterMember do not detect exitApp cmd, will restart...")
+			env.Logger.Println("BootstrapLocalClusterMember do not detect exitApp cmd, will restart...")
 			restartMemberChannel <- MEMBER_RESTART_CMDWAIT
 		}
 	}()
@@ -413,7 +413,7 @@ func bootstrapLocalClusterMember() {
 func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
 	callCmd := exec.Command("bash", "-c", "script/main.py")
 
-	loggerIOAdapter := log.NewLoggerIOAdapter(env.logger)
+	loggerIOAdapter := log.NewLoggerIOAdapter(env.Logger)
 	loggerIOAdapter.SetPrefix(logPrefix)
 	callCmd.Stdout = loggerIOAdapter
 	callCmd.Stderr = loggerIOAdapter
@@ -431,7 +431,7 @@ func cmdCallWaitProcessAsync(callCmd *exec.Cmd) {
 		defer cmdWaitGroup.Done()
 		err := callCmd.Start()
 		if err != nil {
-			env.logger.Println("callCmd.Start() error found:", err)
+			env.Logger.Println("callCmd.Start() error found:", err)
 		}
 		callCmd.Wait()
 	}()
@@ -447,7 +447,7 @@ func cmdCallWaitProcessSync(callCmd *exec.Cmd) {
 
 	err := callCmd.Start()
 	if err != nil {
-		env.logger.Println("callCmd.Start() error found:", err)
+		env.Logger.Println("callCmd.Start() error found:", err)
 	}
 	callCmd.Wait()
 }
@@ -455,10 +455,10 @@ func cmdCallWaitProcessSync(callCmd *exec.Cmd) {
 func getCallCmdENVSet(event string) []string {
 
 	envs := []string{"ZOOINIT_CLUSTER_BACKEND=" + env.clusterBackend}
-	envs = append(envs, "ZOOINIT_CLUSTER_SERVICE="+env.service)
+	envs = append(envs, "ZOOINIT_CLUSTER_SERVICE="+env.Service)
 	envs = append(envs, "ZOOINIT_CLUSTER_EVENT="+event)
 	envs = append(envs, "ZOOINIT_SERVER_IP_LIST="+strings.Join(membersElected, ","))
-	envs = append(envs, "ZOOINIT_LOCAL_IP="+env.localIP.String())
+	envs = append(envs, "ZOOINIT_LOCAL_IP="+env.LocalIP.String())
 
 	// Master first one
 	if len(membersElected) > 0 {
@@ -479,14 +479,14 @@ func getCallCmdENVSet(event string) []string {
 // Cluster stated check may also need to use scripts hook
 func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	kvApi := getClientKeysApi()
 
 	result = false
 
 	// Important!!! check upstarted
-	env.logger.Println("Call hook script for check discovery cluster's startup...")
+	env.Logger.Println("Call hook script for check discovery cluster's startup...")
 	// Call script
 	cmdWaitGroup.Add(1)
 	sucCh := make(chan bool)
@@ -499,7 +499,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 
 			err := callCmd.Start()
 			if err != nil {
-				env.logger.Println("callCmd.Start() error found:", err)
+				env.Logger.Println("callCmd.Start() error found:", err)
 			}
 			callCmd.Wait()
 
@@ -507,7 +507,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 			if callCmd.ProcessState.Success() {
 				sucCh <- true
 
-				env.logger.Println("Cluster is checked up now, The status is normal.")
+				env.Logger.Println("Cluster is checked up now, The status is normal.")
 				clusterUpdated = true
 
 				//mark cluster booted
@@ -517,25 +517,25 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 				go updateDiscoveryTTL()
 
 				// Set config/booted to true
-				booted := "true," + env.localIP.String() + "," + time.Now().String()
+				booted := "true," + env.LocalIP.String() + "," + time.Now().String()
 				resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, booted, &client.SetOptions{PrevExist: client.PrevNoExist})
 				if err != nil {
 					//ignore exist error
 					if etcd.EqualEtcdError(err, client.ErrorCodeNodeExist) {
 						// check if exist need to add qurorum
-						env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" set by another node, error:", err)
+						env.Logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" set by another node, error:", err)
 
 						resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED, &client.GetOptions{})
 						if err == nil {
-							env.logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, "Resp:", resp)
+							env.Logger.Println("Etcd.Api() cluster already booted at :", CLUSTER_CONFIG_DIR_BOOTED, "Resp:", resp)
 						} else {
-							env.logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
+							env.Logger.Fatalln("Etcd.Api() found error while fetch:", CLUSTER_CONFIG_DIR_BOOTED, " error:", err)
 						}
 					} else {
-						env.logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" error:", err)
+						env.Logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" error:", err)
 					}
 				} else {
-					env.logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" ok:", booted, "Resp:", resp)
+					env.Logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED+" ok:", booted, "Resp:", resp)
 				}
 				break
 			}
@@ -543,8 +543,8 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	}()
 
 	select {
-	case <-time.After(env.timeout):
-		env.logger.Println("Cluster booting is timeout, will give up and terminate.")
+	case <-time.After(env.Timeout):
+		env.Logger.Println("Cluster booting is timeout, will give up and terminate.")
 		exitApp.Store(true)
 	case <-sucCh:
 		break
@@ -554,12 +554,12 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 }
 
 func getBootedFlagFile() string {
-	return env.logPath + "/booted"
+	return env.LogPath + "/booted"
 }
 
 func makeClusterBooted() (bool, error) {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	//create if nessary
 	err := os.MkdirAll(filepath.Dir(getBootedFlagFile()), log.DEFAULT_LOGDIR_MODE)
@@ -586,7 +586,7 @@ func makeClusterBooted() (bool, error) {
 
 func IsClusterBootedBefore() bool {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	file, err := os.Open(getBootedFlagFile())
 	if err == nil {
@@ -594,7 +594,7 @@ func IsClusterBootedBefore() bool {
 		if err == nil {
 			ti, err := time.Parse(time.RFC3339, string(content))
 			if err == nil {
-				env.logger.Println("Cluster ever booted at:", ti.Format(time.RFC3339))
+				env.Logger.Println("Cluster ever booted at:", ti.Format(time.RFC3339))
 				return true
 			}
 		}
@@ -607,7 +607,7 @@ func IsClusterBootedBefore() bool {
 // update need to call after
 func updateDiscoveryTTL() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 	rand.Seed(time.Now().UnixNano())
 
 	//30-59s 随机更新一次,所有节点都会更新
@@ -616,12 +616,12 @@ func updateDiscoveryTTL() {
 		kvApi := getClientKeysApi()
 
 		// Update TTL
-		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: env.timeout, PrevExist: client.PrevExist})
+		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath, "", &client.SetOptions{Dir: true, TTL: env.Timeout, PrevExist: client.PrevExist})
 		if err != nil {
 			// Not exit.
-			env.logger.Println("Etcd.Api() update "+env.discoveryPath+" TTL error:", err, " faildTimes:", failedTimes)
+			env.Logger.Println("Etcd.Api() update "+env.discoveryPath+" TTL error:", err, " faildTimes:", failedTimes)
 		} else {
-			env.logger.Println("Etcd.Api() update "+env.discoveryPath+" ok", "Resp:", resp)
+			env.Logger.Println("Etcd.Api() update "+env.discoveryPath+" ok", "Resp:", resp)
 			failedTimes = 0
 		}
 
@@ -632,14 +632,14 @@ func updateDiscoveryTTL() {
 
 func eventOnClusterBooted() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	// Call OnClusterBooted script, no need goroutine
 	if env.eventOnClusterBooted != "" {
 		callCmd := getCallCmdInstance("OnClusterBooted: ", env.eventOnClusterBooted)
 		err := callCmd.Start()
 		if err != nil {
-			env.logger.Println("callCmd.Start() error found:", err)
+			env.Logger.Println("callCmd.Start() error found:", err)
 		}
 		callCmd.Wait()
 	}
@@ -648,7 +648,7 @@ func eventOnClusterBooted() {
 // Check cluster health after cluster is up.
 func watchDogRunning() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	//this can not use goroutine, this is a loop
 	firstRun := true
@@ -656,7 +656,7 @@ func watchDogRunning() {
 	failedTimes := 0
 	for {
 		if isExit, ok := exitApp.Load().(bool); ok && isExit {
-			env.logger.Println("Receive exitApp signal, break watchDogRunning loop.")
+			env.Logger.Println("Receive exitApp signal, break watchDogRunning loop.")
 			break
 		}
 
@@ -683,22 +683,22 @@ func watchDogRunning() {
 			// trigger restart related
 			execCheckFailedTimes++
 			if execCheckFailedTimes >= MEMBER_MAX_FAILED_TIMES {
-				env.logger.Println("Cluster member is NOT healthy, will trigger Restart. Failed times:", execCheckFailedTimes, ", MEMBER_MAX_FAILED_TIMES:", MEMBER_MAX_FAILED_TIMES)
+				env.Logger.Println("Cluster member is NOT healthy, will trigger Restart. Failed times:", execCheckFailedTimes, ", MEMBER_MAX_FAILED_TIMES:", MEMBER_MAX_FAILED_TIMES)
 				execCheckFailedTimes = 0
 				restartMemberChannel <- MEMBER_RESTART_HEALTHCHECK
 			} else {
-				env.logger.Println("Cluster member is NOT healthy, Failed times:", execCheckFailedTimes)
+				env.Logger.Println("Cluster member is NOT healthy, Failed times:", execCheckFailedTimes)
 			}
 		}
 
-		cm = NewClusterMember(env.GetNodename(), env.localIP.String(), result, execCheckFailedTimes)
+		cm = NewClusterMember(env.GetNodename(), env.LocalIP.String(), result, execCheckFailedTimes)
 		kvApi := getClientKeysApi()
 		pathNode := env.discoveryPath + CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
 		resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: CLUSTER_MEMBER_NODE_TTL})
 		if err != nil {
-			env.logger.Println("Etcd.Api() update "+pathNode+" State error:", err, " faildTimes:", failedTimes)
+			env.Logger.Println("Etcd.Api() update "+pathNode+" State error:", err, " faildTimes:", failedTimes)
 		} else {
-			env.logger.Println("Etcd.Api() update "+pathNode+" ok", "Resp:", resp)
+			env.Logger.Println("Etcd.Api() update "+pathNode+" ok", "Resp:", resp)
 			failedTimes = 0
 		}
 
@@ -707,14 +707,14 @@ func watchDogRunning() {
 		}
 
 		// sleep interval time
-		time.Sleep(env.healthCheckInterval)
+		time.Sleep(env.HealthCheckInterval)
 	}
 }
 
 // Need to watch config size
 func watchQurorumSize() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	for {
 		kvApi := getClientKeysApi()
@@ -727,19 +727,19 @@ func watchQurorumSize() {
 		}
 
 		if err != nil {
-			env.logger.Fatalln("Etcd.Api() watch "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
+			env.Logger.Fatalln("Etcd.Api() watch "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
 		} else {
-			env.logger.Println("Etcd.Api() watch "+CLUSTER_CONFIG_DIR_SIZE+" found change:", resp)
+			env.Logger.Println("Etcd.Api() watch "+CLUSTER_CONFIG_DIR_SIZE+" found change:", resp)
 
 			if (resp.Action == "expire" || resp.Action == "delete") && resp.Node.Key == env.discoveryPath {
-				env.logger.Println("Etcd.Api() service boot timeout reach, will delete " + env.discoveryPath + " and terminate app.")
+				env.Logger.Println("Etcd.Api() service boot timeout reach, will delete " + env.discoveryPath + " and terminate app.")
 
 				resp, err := kvApi.Conn().Delete(etcd.Context(), env.discoveryPath, &client.DeleteOptions{Recursive: true, Dir: true})
 
 				if err != nil {
-					env.logger.Println("Etcd.Api() error while delete "+env.discoveryPath+": ", err)
+					env.Logger.Println("Etcd.Api() error while delete "+env.discoveryPath+": ", err)
 				} else {
-					env.logger.Println("Etcd.Api() deleted "+env.discoveryPath+" and bye: ", resp)
+					env.Logger.Println("Etcd.Api() deleted "+env.discoveryPath+" and bye: ", resp)
 				}
 
 				// Need exit
@@ -753,18 +753,18 @@ func watchQurorumSize() {
 
 func getQurorumSize() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	kvApi := getClientKeysApi()
 	// get config size
 	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_SIZE, &client.GetOptions{})
 	if err != nil {
-		env.logger.Fatalln("Etcd.Api() get "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
+		env.Logger.Fatalln("Etcd.Api() get "+CLUSTER_CONFIG_DIR_SIZE+" error:", err)
 	} else {
-		env.logger.Println("Etcd.Api() get "+CLUSTER_CONFIG_DIR_SIZE+" ok, Qurorum size:", resp.Node.Value)
+		env.Logger.Println("Etcd.Api() get "+CLUSTER_CONFIG_DIR_SIZE+" ok, Qurorum size:", resp.Node.Value)
 		tmp, err := strconv.ParseInt(resp.Node.Value, 10, 64)
 		if err != nil {
-			env.logger.Fatalln("Error: strconv.ParseInt("+CLUSTER_CONFIG_DIR_SIZE+") error:", err)
+			env.Logger.Fatalln("Error: strconv.ParseInt("+CLUSTER_CONFIG_DIR_SIZE+") error:", err)
 		}
 
 		qurorumSyncLock.Lock()
@@ -781,11 +781,11 @@ func getQurorumSize() {
 
 func getClientKeysApi() *etcd.ApiKeys {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	kvApi, err := etcd.NewApiKeys(lastestEndpoints)
 	if err != nil {
-		env.logger.Fatalln("Etcd.NewApiKeys() found error:", err)
+		env.Logger.Fatalln("Etcd.NewApiKeys() found error:", err)
 	}
 
 	return kvApi
@@ -793,11 +793,11 @@ func getClientKeysApi() *etcd.ApiKeys {
 
 func getClientMembersApi(endpoints []string) *etcd.ApiMembers {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	memApi, err := etcd.NewApiMember(endpoints)
 	if err != nil {
-		env.logger.Fatalln("Etcd.NewApiMember() found error:", err)
+		env.Logger.Fatalln("Etcd.NewApiMember() found error:", err)
 	}
 
 	return memApi
@@ -806,26 +806,26 @@ func getClientMembersApi(endpoints []string) *etcd.ApiMembers {
 // Watch restartMemberChannel
 func clusterMemberRestartRoutine() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
 	restartTimes := 0
 	for {
 		select {
 		case trigger := <-restartMemberChannel:
 			if trigger == MEMBER_RESTART_CMDWAIT {
-				env.logger.Println("exec restartMemberChannel MEMBER_RESTART_CMDWAIT...")
+				env.Logger.Println("exec restartMemberChannel MEMBER_RESTART_CMDWAIT...")
 				// need to reset execCheckFailedTimes
 				execCheckFailedTimes = 0
 
 			} else if trigger == MEMBER_RESTART_HEALTHCHECK {
-				env.logger.Println("exec restartMemberChannel MEMBER_RESTART_HEALTHCHECK...")
+				env.Logger.Println("exec restartMemberChannel MEMBER_RESTART_HEALTHCHECK...")
 				if callCmdStartInstance.Process != nil {
-					env.logger.Println("Kill old process runtime, pid:", callCmdStartInstance.Process.Pid)
+					env.Logger.Println("Kill old process runtime, pid:", callCmdStartInstance.Process.Pid)
 					callCmdStartInstance.Process.Kill()
 				}
 
 			} else {
-				env.logger.Println("Fetch error restartMemberChannel value:", trigger)
+				env.Logger.Println("Fetch error restartMemberChannel value:", trigger)
 			}
 
 			// restart frequency control
@@ -833,17 +833,17 @@ func clusterMemberRestartRoutine() {
 				restartTimes = 1 // reset
 			}
 			timeToSleep := time.Duration(restartTimes) * time.Second
-			env.logger.Println("Will sleep " + timeToSleep.String() + " continue to restart member...")
+			env.Logger.Println("Will sleep " + timeToSleep.String() + " continue to restart member...")
 			time.Sleep(timeToSleep)
 			restartTimes++
 
 			//ProcessState stores information about a process, as reported by Wait.
 			if callCmdStartInstance.ProcessState != nil {
-				env.logger.Println("Exception: callCmdStartInstance.ProcessState is:", callCmdStartInstance.ProcessState.String())
+				env.Logger.Println("Exception: callCmdStartInstance.ProcessState is:", callCmdStartInstance.ProcessState.String())
 				bootstrapLocalClusterMember()
 
 			} else {
-				env.logger.Println("Exception: callCmdStartInstance.ProcessState is nil.")
+				env.Logger.Println("Exception: callCmdStartInstance.ProcessState is nil.")
 			}
 		}
 	}
@@ -853,14 +853,14 @@ func clusterMemberRestartRoutine() {
 // can also remove self, because will register later
 func removeOutDateClusterMemberElection() {
 	//flush last log info
-	defer env.logger.Sync()
+	defer env.Logger.Sync()
 
-	env.logger.Println("Process removeOutDateClusterMemberElection: remove /election out dated item compare to /members...")
+	env.Logger.Println("Process removeOutDateClusterMemberElection: remove /election out dated item compare to /members...")
 
 	kvApi := getClientKeysApi()
 	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_MEMBER_DIR, &client.GetOptions{Recursive: true, Sort: true})
 	if err != nil {
-		env.logger.Println("Fetched latest membesrs error:", err)
+		env.Logger.Println("Fetched latest membesrs error:", err)
 	}
 
 	var memberList []string
@@ -871,27 +871,27 @@ func removeOutDateClusterMemberElection() {
 
 		memberInfo, err := BuildCheckInfoFromJSON(node.Value)
 		if err != nil {
-			env.logger.Println("BuildCheckInfoFromJSON(node.Value) error:", err)
+			env.Logger.Println("BuildCheckInfoFromJSON(node.Value) error:", err)
 			continue
 		}
 		memberList = append(memberList, memberInfo.Localip)
 	}
-	env.logger.Println("Fetched latest membesrs:", memberList)
+	env.Logger.Println("Fetched latest membesrs:", memberList)
 
 	resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
 	if err == nil {
 		for _, node := range resp.Node.Nodes {
 			if node.Dir || !etcd.CheckInOrderKeyFormat(node.Key) {
-				env.logger.Println("error CheckInOrderKeyFormat or dir, skip:", node.Key)
+				env.Logger.Println("error CheckInOrderKeyFormat or dir, skip:", node.Key)
 				continue
 			}
 
 			//if not in the memberlist, need to clear
 			if !utility.InSlice(memberList, node.Value) {
-				env.logger.Println("Endpoint ip "+node.Value+" is not in the memberlist, will be deleted, key:", node.Key)
+				env.Logger.Println("Endpoint ip "+node.Value+" is not in the memberlist, will be deleted, key:", node.Key)
 				resp, err = kvApi.Conn().Delete(etcd.Context(), node.Key, &client.DeleteOptions{Recursive: false, Dir: false})
 				if err != nil {
-					env.logger.Println("RemoveOutDateClusterMemberElection error delete key:", node.Key)
+					env.Logger.Println("RemoveOutDateClusterMemberElection error delete key:", node.Key)
 				}
 			}
 		}

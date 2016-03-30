@@ -9,7 +9,7 @@ func TestClusterENVNormal(t *testing.T) {
 
 	t.Logf("Parsed env info values: %q", env)
 
-	if env.service != "consul" {
-		t.Error("Parsed env env.service error:", env.service)
+	if env.Service != "consul" {
+		t.Error("Parsed env env.service error:", env.Service)
 	}
 }

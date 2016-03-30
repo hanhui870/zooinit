@@ -1,17 +1,19 @@
 package cluster
 
 import (
+	"os"
 	"testing"
 	"time"
 )
 
 func TestCheckServiceTests(t *testing.T) {
-	ch := &ClusterMember{Name: "Consul-192.168.4.108", Localip: "192.168.4.108", Update: time.Now().Format(time.RFC3339), State: true}
+	host, err := os.Hostname()
+	ch := &ClusterMember{Name: "Consul-192.168.4.108", Localip: "192.168.4.108", Update: time.Now().Format(time.RFC3339), State: true, Hostname: host}
 	t.Log(ch.ToJson())
 
 	chn := NewClusterMember("Consul-192.168.4.108", "192.168.4.108", true, 0)
 	if ch.ToJson() != chn.ToJson() {
-		t.Error("NewClusterMember Found error.")
+		t.Error("NewClusterMember Found error.", chn.ToJson())
 	}
 
 	if ch.IsHealth() != true {

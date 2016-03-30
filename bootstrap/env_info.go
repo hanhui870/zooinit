@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"log"
 	"net"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -19,11 +18,7 @@ import (
 
 // This basic discovery service bootstrap env info
 type envInfo struct {
-	//service name, also use for log
-	service string
-
-	//Pid file path
-	pidPath string
+	cluster.BaseInfo
 
 	// Bootstrap etcd cluster service for boot other cluster service.
 	discoveryHost string
@@ -44,32 +39,11 @@ type envInfo struct {
 	// whether internalHost is the machine running program owns
 	isSelfIp bool
 
-	// localIP for boot
-	localIP net.IP
-
-	// cluster totol qurorum
-	qurorum int
-	// sec unit
-	timeout time.Duration
-
-	// Configuration of runtime log channel: file, write to file; stdout, write to stdout; multi, write both.
-	logChannel string
-	logPath    string
-
-	// Logger instance for service
-	logger *loglocal.BufferedFileLogger
-
 	// boot command
 	cmd          string
 	cmdDataDir   string
 	cmdWalDir    string
 	cmdSnapCount int
-
-	// Health check interval, default 2 sec, same to zookeeper ticktime.
-	healthCheckInterval time.Duration
-
-	// Term Signal catcher
-	sc *utility.SignalCatcher
 }
 
 // New env from file
@@ -83,8 +57,8 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 	obj := new(envInfo)
 
 	sec := iniobj.Section(CONFIG_SECTION)
-	obj.service = sec.Key("service").String()
-	if obj.service == "" {
+	obj.Service = sec.Key("service").String()
+	if obj.Service == "" {
 		log.Fatalln("Config of service is empty.")
 	}
 
@@ -92,43 +66,43 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 	var keyNow string
 
 	keyNow = "pid.path"
-	obj.pidPath = config.GetValueString(keyNow, sec, c)
-	if obj.pidPath == "" {
+	obj.PidPath = config.GetValueString(keyNow, sec, c)
+	if obj.PidPath == "" {
 		log.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
 	keyNow = "log.channel"
-	obj.logChannel = config.GetValueString(keyNow, sec, c)
-	if obj.logChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, obj.logChannel) {
+	obj.LogChannel = config.GetValueString(keyNow, sec, c)
+	if obj.LogChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, obj.LogChannel) {
 		log.Fatalln("Config of " + keyNow + " must be one of file/stdout/multi.")
 	}
 
 	keyNow = "log.path"
-	obj.logPath = config.GetValueString(keyNow, sec, c)
-	if obj.logPath == "" {
+	obj.LogPath = config.GetValueString(keyNow, sec, c)
+	if obj.LogPath == "" {
 		log.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
 	// Construct logger instance
-	if obj.logChannel == "file" {
-		obj.logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
-	} else if obj.logChannel == "stdout" {
-		obj.logger = loglocal.GetBufferedLogger()
-	} else if obj.logChannel == "multi" {
-		obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	if obj.LogChannel == "file" {
+		obj.Logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.LogPath, obj.Service))
+	} else if obj.LogChannel == "stdout" {
+		obj.Logger = loglocal.GetBufferedLogger()
+	} else if obj.LogChannel == "multi" {
+		obj.Logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.LogPath, obj.Service))
 	}
 	//flush last log info
-	defer obj.logger.Sync()
+	defer obj.Logger.Sync()
 
-	obj.logger.Println("Configure file parsed. Waiting to be boostrapped.")
+	obj.Logger.Println("Configure file parsed. Waiting to be boostrapped.")
 
 	keyNow = "discovery"
 	discovery := config.GetValueString(keyNow, sec, c)
 	if discovery == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	if strings.Count(discovery, ":") != 2 {
-		obj.logger.Fatalln("Config of " + keyNow + " need ip:port:peer format.")
+		obj.Logger.Fatalln("Config of " + keyNow + " need ip:port:peer format.")
 	}
 	obj.discoveryHost = discovery[0:strings.Index(discovery, ":")]
 	obj.discoveryPort = discovery[strings.Index(discovery, ":")+1 : strings.LastIndex(discovery, ":")]
@@ -137,10 +111,10 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 	keyNow = "internal"
 	internal := config.GetValueString(keyNow, sec, c)
 	if internal == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	if strings.Count(internal, ":") != 1 {
-		obj.logger.Fatalln("Config of " + keyNow + " need port:peer format.")
+		obj.Logger.Fatalln("Config of " + keyNow + " need port:peer format.")
 	}
 	// Must be identical with discoveryHost
 	obj.internalHost = obj.discoveryHost
@@ -150,79 +124,79 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 	keyNow = "internal.data.dir"
 	path := config.GetValueString(keyNow, sec, c)
 	if path == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.internalDataDir = path
 
 	keyNow = "internal.wal.dir"
 	path = config.GetValueString(keyNow, sec, c)
 	if path == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.internalWalDir = path
 
 	keyNow = "qurorum"
 	qurorum, err := config.GetValueInt(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
+		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if qurorum < 3 {
-		obj.logger.Fatalln("Config of " + keyNow + " must >=3")
+		obj.Logger.Fatalln("Config of " + keyNow + " must >=3")
 	}
-	obj.qurorum = qurorum
+	obj.Qurorum = qurorum
 
 	keyNow = "timeout"
 	timeout, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
+		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if timeout == 0 {
-		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
+		obj.Timeout = CLUSTER_BOOTSTRAP_TIMEOUT
 	} else {
-		obj.timeout = time.Duration(int(timeout * 1000000000))
+		obj.Timeout = time.Duration(int(timeout * 1000000000))
 	}
 
 	keyNow = "health.check.interval"
 	checkInterval, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
+		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if checkInterval > 60 || checkInterval < 1 {
-		obj.logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
+		obj.Logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
 	}
 	if checkInterval == 0 {
-		obj.healthCheckInterval = cluster.CLUSTER_HEALTH_CHECK_INTERVAL
+		obj.HealthCheckInterval = cluster.CLUSTER_HEALTH_CHECK_INTERVAL
 	} else {
-		obj.healthCheckInterval = time.Duration(int(checkInterval * 1000000000))
+		obj.HealthCheckInterval = time.Duration(int(checkInterval * 1000000000))
 	}
 
 	keyNow = "boot.cmd"
 	obj.cmd = config.GetValueString(keyNow, sec, c)
 	if obj.cmd == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
 	keyNow = "boot.data.dir"
 	path = config.GetValueString(keyNow, sec, c)
 	if path == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.cmdDataDir = path
 
 	keyNow = "boot.wal.dir"
 	path = config.GetValueString(keyNow, sec, c)
 	if path == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.cmdWalDir = path
 
 	keyNow = "boot.snap.count"
 	snapCount, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of etcd "+keyNow+" is error:", err)
+		obj.Logger.Fatalln("Config of etcd "+keyNow+" is error:", err)
 	}
 	if snapCount > 100000 || snapCount < 100 {
-		obj.logger.Fatalln("Config of etcd " + keyNow + " must between 100-100000")
+		obj.Logger.Fatalln("Config of etcd " + keyNow + " must between 100-100000")
 	} else {
 		obj.cmdSnapCount = int(snapCount)
 	}
@@ -230,15 +204,15 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 	// Init Extra runtime info
 	if utility.HasIpAddress(obj.internalHost) {
 		obj.isSelfIp = true
-		obj.localIP = net.ParseIP(obj.internalHost)
+		obj.LocalIP = net.ParseIP(obj.internalHost)
 	} else {
 		obj.isSelfIp = false
 
 		localip, err := utility.GetLocalIPWithIntranet(obj.internalHost)
 		if err != nil {
-			obj.logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
+			obj.Logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
 		}
-		obj.localIP = localip
+		obj.LocalIP = localip
 	}
 
 	return obj
@@ -247,26 +221,6 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 // Fetch bootstrap command
 func (e *envInfo) GetCmd() string {
 	return e.cmd
-}
-
-func (e *envInfo) GetQurorum() int {
-	return e.qurorum
-}
-
-func (e *envInfo) GetTimeout() time.Duration {
-	return e.timeout
-}
-
-func (e *envInfo) Service() string {
-	return e.service
-}
-
-func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
-	return e.logger
-}
-
-func (e *envInfo) LocalIP() net.IP {
-	return e.localIP
 }
 
 func (e *envInfo) GetDiscoveryHost() string {
@@ -286,40 +240,9 @@ func (e *envInfo) GetInternalPeerUrl() string {
 }
 
 func (e *envInfo) GetClientUrl() string {
-	return "http://" + env.localIP.String() + ":" + env.discoveryPort
+	return "http://" + env.LocalIP.String() + ":" + env.discoveryPort
 }
 
 func (e *envInfo) GetPeerUrl() string {
-	return "http://" + env.localIP.String() + ":" + env.discoveryPeer
-}
-
-func (e *envInfo) GetNodename() string {
-	return "Etcd-" + e.localIP.String()
-}
-
-// Get Pid file path
-func (e *envInfo) GetPidPath() string {
-	return e.pidPath
-}
-
-func (e *envInfo) registerSignalWatch() {
-	defer e.logger.Sync()
-
-	sg := utility.NewSignalCatcher()
-	stack := utility.NewSignalCallStack()
-	sg.SetDefault(stack)
-	sg.EnableExit()
-
-	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {
-		defer e.logger.Sync()
-		e.logger.Println("Receive signal: " + sig.String() + " App will terminate, bye.")
-	}, nil)
-	stack.Add(call)
-
-	e.logger.Println("Init System SignalWatcher, catch list:", strings.Join(sg.GetSignalStringList(), ", "))
-
-	//register
-	e.sc = sg
-
-	sg.RegisterAndServe()
+	return "http://" + env.LocalIP.String() + ":" + env.discoveryPeer
 }

@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"github.com/twinj/uuid"
 	"net"
 	"reflect"
 	"testing"
@@ -44,6 +45,10 @@ func TestFetchIPList(t *testing.T) {
 		t.Log("Find the smae intranet of 192.168.1.4: ", ip)
 	}
 
+}
+
+func TestUUIDGens(t *testing.T) {
+	t.Log("New gen UUID:", uuid.NewV1().String())
 }
 
 func TestParseCmdStringWithParams(t *testing.T) {

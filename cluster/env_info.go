@@ -2,9 +2,6 @@ package cluster
 
 import (
 	"log"
-	"net"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -17,37 +14,18 @@ import (
 
 // This cluster service bootstrap env info
 type envInfo struct {
-	// service name, also use for log
-	service string
+	BaseInfo
+
 	// Cluster power backend
 	clusterBackend string
-	//Pid file path
-	pidPath string
 
 	// Bootstrap etcd cluster service for boot other cluster service.
 	discoveryMethod string
 	discoveryTarget string
 	discoveryPath   string
 
-	// cluster totol qurorum
-	qurorum int
-	// sec unit
-	timeout time.Duration
-
-	// Configuration of runtime log channel: file, write to file; stdout, write to stdout; multi, write both.
-	logChannel string
-	logPath    string
-
-	// Logger instance for service
-	logger *loglocal.BufferedFileLogger
-
-	// localIP for boot
-	localIP net.IP
 	// Ip hint use to found which ip for boot bind
 	iphint string
-
-	// Health check interval, default 2 sec, same to zookeeper ticktime.
-	healthCheckInterval time.Duration
 
 	// boot event related
 	eventOnPreRegist       string
@@ -61,9 +39,6 @@ type envInfo struct {
 
 	// app start up configuration, app can fetch through env variables
 	config map[string]string
-
-	// Term Signal catcher
-	sc *utility.SignalCatcher
 }
 
 // New env from file
@@ -85,8 +60,8 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 		log.Fatalln("Config of section: " + clusterSection + " is not well configured.")
 	}
 
-	obj.service = service
-	if obj.service == "" {
+	obj.Service = service
+	if obj.Service == "" {
 		log.Fatalln("Config of service is empty.")
 	}
 
@@ -94,229 +69,174 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 	var keyNow string
 
 	keyNow = "pid.path"
-	obj.pidPath = config.GetValueString(keyNow, sec, c)
-	if obj.pidPath == "" {
+	obj.PidPath = config.GetValueString(keyNow, sec, c)
+	if obj.PidPath == "" {
 		log.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
 	keyNow = "log.channel"
-	obj.logChannel = config.GetValueString(keyNow, sec, c)
-	if obj.logChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, obj.logChannel) {
+	obj.LogChannel = config.GetValueString(keyNow, sec, c)
+	if obj.LogChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, obj.LogChannel) {
 		log.Fatalln("Config of " + keyNow + " must be one of file/stdout/multi.")
 	}
 
 	keyNow = "log.path"
-	obj.logPath = config.GetValueString(keyNow, sec, c)
-	if obj.logPath == "" {
+	obj.LogPath = config.GetValueString(keyNow, sec, c)
+	if obj.LogPath == "" {
 		log.Fatalln("Config of log.path is empty, log to stdout also need.")
 	}
 
 	obj.clusterBackend = backend
 
 	// Construct logger instance
-	if obj.logChannel == "file" {
-		obj.logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
-	} else if obj.logChannel == "stdout" {
-		obj.logger = loglocal.GetBufferedLogger()
-	} else if obj.logChannel == "multi" {
-		obj.logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.logPath, obj.service))
+	if obj.LogChannel == "file" {
+		obj.Logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.LogPath, obj.Service))
+	} else if obj.LogChannel == "stdout" {
+		obj.Logger = loglocal.GetBufferedLogger()
+	} else if obj.LogChannel == "multi" {
+		obj.Logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.LogPath, obj.Service))
 	}
 	//flush last log info
-	defer obj.logger.Sync()
+	defer obj.Logger.Sync()
 
-	obj.logger.Println("Service name of cluster is:", obj.service)
+	obj.Logger.Println("Service name of cluster is:", obj.Service)
 
 	keyNow = "discover.method"
 	obj.discoveryMethod = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryMethod == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
 	keyNow = "discover.target"
 	obj.discoveryTarget = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryTarget == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
 	keyNow = "discover.path"
 	obj.discoveryPath = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryPath == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
-	obj.discoveryPath = obj.discoveryPath + "/" + obj.service
+	obj.discoveryPath = obj.discoveryPath + "/" + obj.Service
 
 	keyNow = "qurorum"
 	qurorum, err := config.GetValueInt(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
+		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if qurorum < 3 {
-		obj.logger.Fatalln("Config of " + keyNow + " must >=3")
+		obj.Logger.Fatalln("Config of " + keyNow + " must >=3")
 	}
-	obj.qurorum = qurorum
+	obj.Qurorum = qurorum
 
 	keyNow = "timeout"
 	timeout, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
+		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if timeout == 0 {
-		obj.timeout = CLUSTER_BOOTSTRAP_TIMEOUT
+		obj.Timeout = CLUSTER_BOOTSTRAP_TIMEOUT
 	} else {
-		obj.timeout = time.Duration(int(timeout * 1000000000))
+		obj.Timeout = time.Duration(int(timeout * 1000000000))
 	}
 
 	keyNow = "health.check.interval"
 	checkInterval, err := config.GetValueFloat64(keyNow, sec, c)
 	if err != nil {
-		obj.logger.Fatalln("Config of "+keyNow+" is error:", err)
+		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
 	}
 	if checkInterval > 60 || checkInterval < 1 {
-		obj.logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
+		obj.Logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
 	}
 	if checkInterval == 0 {
-		obj.healthCheckInterval = CLUSTER_HEALTH_CHECK_INTERVAL
+		obj.HealthCheckInterval = CLUSTER_HEALTH_CHECK_INTERVAL
 	} else {
-		obj.healthCheckInterval = time.Duration(int(checkInterval * 1000000000))
+		obj.HealthCheckInterval = time.Duration(int(checkInterval * 1000000000))
 	}
 
 	// Event process
 	keyNow = "EVENT_ON_PRE_REGIST"
 	obj.eventOnPreRegist = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnPreRegist != "" {
-		obj.logger.Println("Found event "+keyNow+":", obj.eventOnPreRegist)
+		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnPreRegist)
 	}
 	keyNow = "EVENT_ON_POST_REGIST"
 	obj.eventOnPostRegist = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnPostRegist != "" {
-		obj.logger.Println("Found event "+keyNow+":", obj.eventOnPostRegist)
+		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnPostRegist)
 	}
 	keyNow = "EVENT_ON_REACH_QURORUM_NUM"
 	obj.eventOnReachQurorumNum = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnReachQurorumNum != "" {
-		obj.logger.Println("Found event "+keyNow+":", obj.eventOnReachQurorumNum)
+		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnReachQurorumNum)
 	}
 	keyNow = "EVENT_ON_PRE_START"
 	obj.eventOnPreStart = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnPreStart != "" {
-		obj.logger.Println("Found event "+keyNow+":", obj.eventOnPreStart)
+		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnPreStart)
 	}
 	//required
 	keyNow = "EVENT_ON_START"
 	obj.eventOnStart = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnStart == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	} else {
-		obj.logger.Println("Found event "+keyNow+":", obj.eventOnStart)
+		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnStart)
 	}
 	keyNow = "EVENT_ON_POST_START"
 	obj.eventOnPostStart = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnPostStart == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	} else {
-		obj.logger.Println("Found event "+keyNow+":", obj.eventOnPostStart)
+		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnPostStart)
 	}
 	keyNow = "EVENT_ON_CLUSTER_BOOTED"
 	obj.eventOnClusterBooted = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnClusterBooted != "" {
-		obj.logger.Println("Found event "+keyNow+":", obj.eventOnClusterBooted)
+		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnClusterBooted)
 	}
 	keyNow = "EVENT_ON_HEALTH_CHECK"
 	obj.eventOnHealthCheck = config.GetValueString(keyNow, sec, c)
 	if obj.eventOnHealthCheck == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	} else {
-		obj.logger.Println("Found event "+keyNow+":", obj.eventOnHealthCheck)
+		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnHealthCheck)
 	}
 
 	keyNow = "ip.hint"
 	obj.iphint = config.GetValueString(keyNow, sec, c)
 	if obj.iphint == "" {
-		obj.logger.Fatalln("Config of " + keyNow + " is empty.")
+		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
 	// Find localip
 	localip, err := utility.GetLocalIPWithIntranet(obj.iphint)
 	if err != nil {
-		obj.logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
+		obj.Logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
 	}
-	obj.localIP = localip
-	obj.logger.Println("Found localip for boot:", obj.localIP)
+	obj.LocalIP = localip
+	obj.Logger.Println("Found localip for boot:", obj.LocalIP)
 
 	// store app config, optional
 	appSection := clusterSection + ".config"
 	secApp, err := iniobj.GetSection(appSection)
 	if err != nil {
-		obj.logger.Println("Config of app config section: " + appSection + " is not well configured, continue...")
+		obj.Logger.Println("Config of app config section: " + appSection + " is not well configured, continue...")
 	} else {
 		obj.config = secApp.KeysHash()
 		if len(obj.config) > 0 {
-			obj.logger.Println("Fetch app config section " + appSection + " KV values:")
+			obj.Logger.Println("Fetch app config section " + appSection + " KV values:")
 
 			for key, value := range obj.config {
-				obj.logger.Println("Key:", key, " Value:", value)
+				obj.Logger.Println("Key:", key, " Value:", value)
 			}
 		} else {
-			obj.logger.Println("Fetch app config section: empty")
+			obj.Logger.Println("Fetch app config section: empty")
 		}
 	}
 
-	obj.logger.Println("Configure file parsed. Waiting to be boostrapped...")
+	obj.Logger.Println("Configure file parsed. Waiting to be boostrapped...")
 
 	return obj
-}
-
-func (e *envInfo) GetQurorum() int {
-	return e.qurorum
-}
-
-func (e *envInfo) GetTimeout() time.Duration {
-	return e.timeout
-}
-
-func (e *envInfo) Service() string {
-	if e == nil {
-		return ""
-	}
-
-	return e.service
-}
-
-func (e *envInfo) Logger() *loglocal.BufferedFileLogger {
-	return e.logger
-}
-
-func (e *envInfo) GetNodename() string {
-	return e.clusterBackend + "-" + e.localIP.String()
-}
-
-// Get Pid file path
-func (e *envInfo) GetPidPath() string {
-	return e.pidPath
-}
-
-func (e *envInfo) LocalIP() net.IP {
-	return e.localIP
-}
-
-func (e *envInfo) registerSignalWatch() {
-	defer e.logger.Sync()
-
-	sg := utility.NewSignalCatcher()
-	stack := utility.NewSignalCallStack()
-	sg.SetDefault(stack)
-	sg.EnableExit()
-
-	call := utility.NewSignalCallback(func(sig os.Signal, data interface{}) {
-		defer e.logger.Sync()
-		e.logger.Println("Receive signal: " + sig.String() + " App will terminate, bye.")
-	}, nil)
-	stack.Add(call)
-
-	e.logger.Println("Init System SignalWatcher, catch list:", strings.Join(sg.GetSignalStringList(), ", "))
-
-	//register
-	e.sc = sg
-
-	sg.RegisterAndServe()
 }

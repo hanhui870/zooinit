@@ -25,6 +25,7 @@ type ClusterMember struct {
 	Hostname string `json:"hostname"`
 	State    bool   `json:"state"`
 	Failed   int    `json:"failed"`
+	UUID     string `json:"uuid"`
 }
 
 func NewClusterMember(Name, Localip string, State bool, Failed int) *ClusterMember {

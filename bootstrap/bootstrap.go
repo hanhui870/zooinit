@@ -24,7 +24,7 @@ func Bootstrap(c *cli.Context) {
 	cluster.GuaranteeSingleRun(env)
 
 	//register signal watcher
-	env.registerSignalWatch()
+	env.RegisterSignalWatch()
 
 	BootstrapEtcd(env)
 }
