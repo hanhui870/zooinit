@@ -311,7 +311,7 @@ func loopUntilQurorumIsReached() {
 		}
 
 		// fetch latest node list
-		nodeList, err := getLastestNodeList()
+		nodeList, err := getLastestNodeIPList()
 		if err != nil {
 			env.Logger.Println("Etcd.Api() get "+env.discoveryPath+CLUSTER_ELECTION_DIR+" lastest election nodes error:", err)
 			env.Logger.Println("Will exit now...")
@@ -831,6 +831,7 @@ func clusterMemberRestartRoutine() {
 
 // remove /election out dated item compare to /members
 // can also remove self, because will register later
+// 03.30 use UUID compare
 func removeOutDateClusterMemberElection() {
 	//flush last log info
 	defer env.Logger.Sync()
@@ -854,7 +855,7 @@ func removeOutDateClusterMemberElection() {
 			env.Logger.Println("BuildCheckInfoFromJSON(node.Value) error:", err)
 			continue
 		}
-		memberList = append(memberList, memberInfo.Localip)
+		memberList = append(memberList, memberInfo.UUID)
 	}
 	env.Logger.Println("Fetched latest membesrs:", memberList)
 
@@ -866,8 +867,13 @@ func removeOutDateClusterMemberElection() {
 				continue
 			}
 
+			em, err := BuildElectionMemberFromJSON(node.Value)
+			if err != nil {
+				env.Logger.Println("Fetch Invaild electioin node:", node.Value, " will continue..")
+				continue
+			}
 			//if not in the memberlist, need to clear
-			if !utility.InSlice(memberList, node.Value) {
+			if !utility.InSlice(memberList, em.Uuid) {
 				env.Logger.Println("Endpoint ip "+node.Value+" is not in the memberlist, will be deleted, key:", node.Key)
 				resp, err = kvApi.Conn().Delete(etcd.Context(), node.Key, &client.DeleteOptions{Recursive: false, Dir: false})
 				if err != nil {
