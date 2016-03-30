@@ -146,8 +146,9 @@ func setClusterBootedUUIDs(uuidList []string) {
 		env.Logger.Fatalln("SetClusterBootedUUIDs len of uuidList is 0, please check.")
 	}
 
+	//master update booted uuid
 	if env.UUID == uuidList[0] {
-		env.Logger.Fatalln("SetClusterBootedUUIDs The server uuid is first of uuidList, will update booted_uuids...")
+		env.Logger.Println("SetClusterBootedUUIDs The server uuid is first of uuidList, will update booted_uuids...")
 		kvApi := getClientKeysApi()
 		// Set booted uuid
 		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED_UUIDS, strings.Join(uuidList, ","), &client.SetOptions{PrevExist: client.PrevNoExist})
