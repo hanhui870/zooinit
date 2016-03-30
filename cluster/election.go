@@ -3,6 +3,8 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"strings"
 
 	"github.com/coreos/etcd/client"
 
@@ -44,7 +46,7 @@ func BuildElectionMemberFromJSON(str string) (*ElectionMember, error) {
 	return &member, nil
 }
 
-func getLastestNodeIPList() ([]string, error) {
+func getLastestNodeIPList() ([]string, []string, error) {
 	//flush last log info
 	defer env.Logger.Sync()
 
@@ -54,6 +56,7 @@ func getLastestNodeIPList() ([]string, error) {
 	}
 
 	var nodeList []string
+	var uuidList []string
 	for _, nodeValue := range list {
 		em, err := BuildElectionMemberFromJSON(nodeValue)
 		if err != nil {
@@ -61,10 +64,15 @@ func getLastestNodeIPList() ([]string, error) {
 			continue
 		}
 		nodeList = append(nodeList, em.Ip)
+		uuidList = append(uuidList, em.Uuid)
 	}
 
 	nodeList = utility.RemoveDuplicateInOrder(nodeList)
-	return nodeList, nil
+	uuidList = utility.RemoveDuplicateInOrder(uuidList)
+	if len(nodeList) != len(uuidList) {
+		env.Logger.Fatalln("Unique UUID and Unique IP list length is not match, please check, IP:", nodeList, " UUID:", uuidList)
+	}
+	return nodeList, uuidList, nil
 }
 
 func getLastestNodeUUIDList() ([]string, error) {
@@ -127,5 +135,40 @@ func getLastestNodeList() ([]string, error) {
 
 		nodeList = utility.RemoveDuplicateInOrder(nodeList)
 		return nodeList, nil
+	}
+}
+
+func setClusterBootedUUIDs(uuidList []string) {
+	//flush last log info
+	defer env.Logger.Sync()
+
+	if len(uuidList) < 1 {
+		env.Logger.Fatalln("SetClusterBootedUUIDs len of uuidList is 0, please check.")
+	}
+
+	if env.UUID == uuidList[0] {
+		env.Logger.Fatalln("SetClusterBootedUUIDs The server uuid is first of uuidList, will update booted_uuids...")
+		kvApi := getClientKeysApi()
+		// Set booted uuid
+		resp, err := kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED_UUIDS, strings.Join(uuidList, ","), &client.SetOptions{PrevExist: client.PrevNoExist})
+		if err != nil {
+			env.Logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED_UUIDS+" error:", err)
+		} else {
+			env.Logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED_UUIDS+" ok, uuidList:", uuidList, resp)
+		}
+	}
+}
+
+func getClusterBootedUUIDs() ([]string, error) {
+	//flush last log info
+	defer env.Logger.Sync()
+
+	kvApi := getClientKeysApi()
+	// Set booted uuid
+	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED_UUIDS, &client.GetOptions{})
+	if err != nil {
+		return nil, errors.New("Etcd.Api() get " + CLUSTER_CONFIG_DIR_BOOTED_UUIDS + " error:" + err.Error())
+	} else {
+		return strings.Split(resp.Node.Value, ","), nil
 	}
 }

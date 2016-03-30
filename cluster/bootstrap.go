@@ -39,8 +39,9 @@ const (
 	CLUSTER_CONFIG_DIR_SIZE = CLUSTER_CONFIG_DIR + "/size"
 	// 5. consul/config/booted check whether the cluster is booted.
 	CLUSTER_CONFIG_DIR_BOOTED = CLUSTER_CONFIG_DIR + "/booted"
-	CLUSTER_CONFIG_DIR_BOOTED = CLUSTER_CONFIG_DIR + "/map"
-	CLUSTER_ELECTION_DIR      = "/election"
+	// booted uuid of servers
+	CLUSTER_CONFIG_DIR_BOOTED_UUIDS = CLUSTER_CONFIG_DIR + "/booted_uuids"
+	CLUSTER_ELECTION_DIR            = "/election"
 	// 6. check health update this
 	CLUSTER_MEMBER_DIR = "/members"
 	// member node ttl
@@ -65,6 +66,7 @@ var (
 
 	// Discovery service latest result members of election
 	membersElected  []string
+	uuidElected     []string
 	membersSyncLock sync.Mutex
 
 	// Election qurorum size
@@ -312,7 +314,7 @@ func loopUntilQurorumIsReached() {
 		}
 
 		// fetch latest node list
-		nodeList, err := getLastestNodeIPList()
+		nodeList, uuidList, err := getLastestNodeIPList()
 		if err != nil {
 			env.Logger.Println("Etcd.Api() get "+env.discoveryPath+CLUSTER_ELECTION_DIR+" lastest election nodes error:", err)
 			env.Logger.Println("Will exit now...")
@@ -334,9 +336,12 @@ func loopUntilQurorumIsReached() {
 			if len(nodeList) >= qurorumSize {
 				membersSyncLock.Lock()
 				membersElected = nodeList[:qurorumSize]
+				uuidElected = uuidList[:qurorumSize]
 				membersSyncLock.Unlock()
 
-				env.Logger.Println("Get election qurorum finished:", membersElected)
+				env.Logger.Println("Get election qurorum finished:, IP:", membersElected, " UUID:", uuidElected)
+
+				setClusterBootedUUIDs(uuidElected)
 
 				// Call script
 				if env.eventOnReachQurorumNum != "" {
@@ -831,7 +836,7 @@ func clusterMemberRestartRoutine() {
 
 // remove /election out dated item compare to /members
 // can also remove self, because will register later
-// 03.30 must use ip compare, for ip may change.
+// 03.30 must use ip and uuid compare, for ip may change.
 func removeOutDateClusterMemberElection() {
 	//flush last log info
 	defer env.Logger.Sync()
@@ -847,6 +852,11 @@ func removeOutDateClusterMemberElection() {
 		memIpList = append(memIpList, mem.Localip)
 	}
 	env.Logger.Println("Fetched latest membesrs:", memIpList)
+
+	uuidList, err := getClusterBootedUUIDs()
+	if err != nil {
+		env.Logger.Fatalln("Failed to call getClusterBootedUUIDs:", err)
+	}
 
 	kvApi := getClientKeysApi()
 	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
@@ -865,6 +875,15 @@ func removeOutDateClusterMemberElection() {
 			//if not in the memberlist, need to clear
 			if !utility.InSlice(memIpList, em.Ip) {
 				env.Logger.Println("Endpoint ip "+em.Ip+" is not in the memberlist, will be deleted, key:", node.Key)
+				resp, err = kvApi.Conn().Delete(etcd.Context(), node.Key, &client.DeleteOptions{Recursive: false, Dir: false})
+				if err != nil {
+					env.Logger.Println("RemoveOutDateClusterMemberElection error delete key:", node.Key)
+				}
+			}
+
+			//if not in the uuidlist, need to clear
+			if !utility.InSlice(uuidList, em.Uuid) {
+				env.Logger.Println("Endpoint uuid "+em.Uuid+" is not in the uuidList, will be deleted, key:", node.Key)
 				resp, err = kvApi.Conn().Delete(etcd.Context(), node.Key, &client.DeleteOptions{Recursive: false, Dir: false})
 				if err != nil {
 					env.Logger.Println("RemoveOutDateClusterMemberElection error delete key:", node.Key)
