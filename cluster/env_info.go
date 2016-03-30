@@ -50,6 +50,8 @@ func NewEnvInfoFile(fname string, backend, service string) *envInfo {
 
 func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envInfo {
 	obj := new(envInfo)
+	//create uuid
+	obj.CreateUUID()
 
 	// init map
 	obj.config = make(map[string]string)

@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/twinj/uuid"
+
 	loglocal "zooinit/log"
 	"zooinit/utility"
 )
@@ -25,6 +27,12 @@ type Env interface {
 
 	// Get Pid file path
 	GetPidPath() string
+
+	GetNodename() string
+
+	GetQurorum() int
+
+	GetUUID() string
 }
 
 func GuaranteeSingleRun(env Env) {
@@ -55,6 +63,9 @@ func GuaranteeSingleRun(env Env) {
 }
 
 type BaseInfo struct {
+	// uuid of service
+	UUID string
+
 	// service name, also use for log
 	Service string
 
@@ -81,6 +92,15 @@ type BaseInfo struct {
 
 	// Logger instance for service
 	Logger *loglocal.BufferedFileLogger
+}
+
+func (e *BaseInfo) CreateUUID() string {
+	e.UUID = uuid.NewV1().String()
+	return e.UUID
+}
+
+func (e *BaseInfo) GetUUID() string {
+	return e.UUID
 }
 
 func (e *BaseInfo) GetQurorum() int {

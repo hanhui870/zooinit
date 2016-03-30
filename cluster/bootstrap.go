@@ -129,6 +129,7 @@ func Bootstrap(c *cli.Context) {
 	//register signal watcher
 	env.RegisterSignalWatch()
 
+	env.Logger.Println("Server UUID:", env.UUID)
 	env.Logger.Println("Logger channel:", env.LogChannel)
 	if env.LogChannel != log.LOG_STDOUT {
 		env.Logger.Println("Logger path:", env.LogPath)
@@ -691,7 +692,7 @@ func watchDogRunning() {
 			}
 		}
 
-		cm = NewClusterMember(env.GetNodename(), env.LocalIP.String(), result, execCheckFailedTimes)
+		cm = NewClusterMember(env, result, execCheckFailedTimes)
 		kvApi := getClientKeysApi()
 		pathNode := env.discoveryPath + CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
 		resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: CLUSTER_MEMBER_NODE_TTL})

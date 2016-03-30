@@ -85,6 +85,7 @@ func BootstrapEtcd(env *envInfo) {
 	defer env.Logger.Sync()
 	env.Logger.Println("Starting to boot Etcd...")
 
+	env.Logger.Println("Server UUID:", env.UUID)
 	env.Logger.Println("Logger channel:", env.LogChannel)
 	if env.LogChannel != log.LOG_STDOUT {
 		env.Logger.Println("Logger path:", env.LogPath)
@@ -393,7 +394,7 @@ func watchDogRunning() {
 		}
 
 		kvApi := getClientKeysApi()
-		cm = cluster.NewClusterMember(env.GetNodename(), env.LocalIP.String(), result, execCheckFailedTimes)
+		cm = cluster.NewClusterMember(env, result, execCheckFailedTimes)
 		pathNode := DEFAULT_BOOTSTRAP_DISCOVERY_PATH + cluster.CLUSTER_MEMBER_DIR + "/" + env.GetNodename()
 		resp, err := kvApi.Conn().Set(etcd.Context(), pathNode, cm.ToJson(), &client.SetOptions{Dir: false, TTL: cluster.CLUSTER_MEMBER_NODE_TTL})
 		if err != nil {

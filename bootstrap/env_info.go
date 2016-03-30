@@ -55,6 +55,8 @@ func NewEnvInfoFile(fname string) *envInfo {
 
 func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 	obj := new(envInfo)
+	//create uuid
+	obj.CreateUUID()
 
 	sec := iniobj.Section(CONFIG_SECTION)
 	obj.Service = sec.Key("service").String()

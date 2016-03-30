@@ -28,12 +28,12 @@ type ClusterMember struct {
 	UUID     string `json:"uuid"`
 }
 
-func NewClusterMember(Name, Localip string, State bool, Failed int) *ClusterMember {
+func NewClusterMember(env Env, State bool, Failed int) *ClusterMember {
 	host, err := os.Hostname()
 	if err != nil {
-		host = Localip
+		host = env.GetLocalIP().String()
 	}
-	return &ClusterMember{Name: Name, Localip: Localip, State: State, Failed: Failed, Update: time.Now().Format(time.RFC3339), Hostname: host}
+	return &ClusterMember{Name: env.GetNodename(), Localip: env.GetLocalIP().String(), State: State, Failed: Failed, Update: time.Now().Format(time.RFC3339), Hostname: host, UUID: env.GetUUID()}
 }
 
 func (m *ClusterMember) ToJson() string {
