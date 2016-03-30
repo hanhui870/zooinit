@@ -39,6 +39,7 @@ const (
 	CLUSTER_CONFIG_DIR_SIZE = CLUSTER_CONFIG_DIR + "/size"
 	// 5. consul/config/booted check whether the cluster is booted.
 	CLUSTER_CONFIG_DIR_BOOTED = CLUSTER_CONFIG_DIR + "/booted"
+	CLUSTER_CONFIG_DIR_BOOTED = CLUSTER_CONFIG_DIR + "/map"
 	CLUSTER_ELECTION_DIR      = "/election"
 	// 6. check health update this
 	CLUSTER_MEMBER_DIR = "/members"
@@ -831,35 +832,25 @@ func clusterMemberRestartRoutine() {
 
 // remove /election out dated item compare to /members
 // can also remove self, because will register later
-// 03.30 use UUID compare
+// 03.30 must use ip compare, for ip may change.
 func removeOutDateClusterMemberElection() {
 	//flush last log info
 	defer env.Logger.Sync()
 
 	env.Logger.Println("Process removeOutDateClusterMemberElection: remove /election out dated item compare to /members...")
 
-	kvApi := getClientKeysApi()
-	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_MEMBER_DIR, &client.GetOptions{Recursive: true, Sort: true})
+	memlist, err := getLastestClusterMemberList()
 	if err != nil {
-		env.Logger.Println("Fetched latest membesrs error:", err)
+		env.Logger.Fatalln("Failed to call getLastestClusterMemberList:", err)
 	}
-
-	var memberList []string
-	for _, node := range resp.Node.Nodes {
-		if node.Dir {
-			continue
-		}
-
-		memberInfo, err := BuildCheckInfoFromJSON(node.Value)
-		if err != nil {
-			env.Logger.Println("BuildCheckInfoFromJSON(node.Value) error:", err)
-			continue
-		}
-		memberList = append(memberList, memberInfo.UUID)
+	memIpList := []string{}
+	for _, mem := range memlist {
+		memIpList = append(memIpList, mem.Localip)
 	}
-	env.Logger.Println("Fetched latest membesrs:", memberList)
+	env.Logger.Println("Fetched latest membesrs:", memIpList)
 
-	resp, err = kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
+	kvApi := getClientKeysApi()
+	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
 	if err == nil {
 		for _, node := range resp.Node.Nodes {
 			if node.Dir || !etcd.CheckInOrderKeyFormat(node.Key) {
@@ -873,8 +864,8 @@ func removeOutDateClusterMemberElection() {
 				continue
 			}
 			//if not in the memberlist, need to clear
-			if !utility.InSlice(memberList, em.Uuid) {
-				env.Logger.Println("Endpoint ip "+node.Value+" is not in the memberlist, will be deleted, key:", node.Key)
+			if !utility.InSlice(memIpList, em.Ip) {
+				env.Logger.Println("Endpoint ip "+em.Ip+" is not in the memberlist, will be deleted, key:", node.Key)
 				resp, err = kvApi.Conn().Delete(etcd.Context(), node.Key, &client.DeleteOptions{Recursive: false, Dir: false})
 				if err != nil {
 					env.Logger.Println("RemoveOutDateClusterMemberElection error delete key:", node.Key)

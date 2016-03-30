@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"time"
+
+	"github.com/coreos/etcd/client"
+
+	"zooinit/cluster/etcd"
 )
 
 // Health check
@@ -53,4 +57,31 @@ func BuildCheckInfoFromJSON(str string) (*ClusterMember, error) {
 	}
 
 	return &member, nil
+}
+
+// fetch /members list
+func getLastestClusterMemberList() ([]*ClusterMember, error) {
+	//flush last log info
+	defer env.Logger.Sync()
+
+	kvApi := getClientKeysApi()
+	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_MEMBER_DIR, &client.GetOptions{Recursive: true, Sort: true})
+	if err != nil {
+		return nil, err
+	}
+
+	var memberList []*ClusterMember
+	for _, node := range resp.Node.Nodes {
+		if node.Dir {
+			continue
+		}
+
+		memberInfo, err := BuildCheckInfoFromJSON(node.Value)
+		if err != nil {
+			env.Logger.Println("BuildCheckInfoFromJSON(node.Value) error:", err)
+			continue
+		}
+		memberList = append(memberList, memberInfo)
+	}
+	return memberList, nil
 }

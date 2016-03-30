@@ -71,22 +71,39 @@ func getLastestNodeUUIDList() ([]string, error) {
 	//flush last log info
 	defer env.Logger.Sync()
 
-	list, err := getLastestNodeList()
+	list, err := getLastestElectionMemberList()
 	if err != nil {
 		return nil, err
 	}
 
 	var nodeList []string
+	for _, node := range list {
+		nodeList = append(nodeList, node.Uuid)
+	}
+
+	nodeList = utility.RemoveDuplicateInOrder(nodeList)
+	return nodeList, nil
+}
+
+func getLastestElectionMemberList() ([]*ElectionMember, error) {
+	//flush last log info
+	defer env.Logger.Sync()
+
+	list, err := getLastestNodeList()
+	if err != nil {
+		return nil, err
+	}
+
+	var nodeList []*ElectionMember
 	for _, nodeValue := range list {
 		em, err := BuildElectionMemberFromJSON(nodeValue)
 		if err != nil {
 			env.Logger.Println("Fetch Invaild electioin node:", nodeValue, " will continue..")
 			continue
 		}
-		nodeList = append(nodeList, em.Uuid)
+		nodeList = append(nodeList, em)
 	}
 
-	nodeList = utility.RemoveDuplicateInOrder(nodeList)
 	return nodeList, nil
 }
 
