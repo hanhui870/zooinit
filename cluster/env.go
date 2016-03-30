@@ -12,6 +12,7 @@ import (
 
 	"github.com/twinj/uuid"
 
+	"io/ioutil"
 	loglocal "zooinit/log"
 	"zooinit/utility"
 )
@@ -71,7 +72,48 @@ type BaseInfo struct {
 }
 
 func (e *BaseInfo) CreateUUID() string {
-	e.UUID = uuid.NewV1().String()
+	defer e.GetLogger().Sync()
+
+	ufile := e.GetPidPath() + "/" + e.GetService() + ".uuid"
+
+	e.GetLogger().Println("Read and check uuid:", ufile)
+
+	//pid create dir if needed
+	err := os.MkdirAll(filepath.Dir(ufile), loglocal.DEFAULT_LOGDIR_MODE)
+	if err != nil {
+		e.GetLogger().Fatalln("Create pid dir error, info:", err)
+	}
+
+	// O_EXCL used with O_CREATE, file must not exist
+	file, err := os.OpenFile(ufile, os.O_CREATE|os.O_RDWR, 0660)
+	if err != nil {
+		e.GetLogger().Fatalln("Open uuid file failed of os.OpenFile(), info:", err)
+	}
+	buf, err := ioutil.ReadAll(file)
+	if err != nil {
+		e.GetLogger().Fatalln("Read uuid file failed of os.OpenFile(), info:", err)
+	}
+	needCreate := true
+	if len(buf) > 0 {
+		_, err = uuid.Parse(string(buf))
+		if err == nil {
+			needCreate = false
+
+			e.UUID = string(buf)
+			e.GetLogger().Println("Fetch uuid of server Success:", e.UUID)
+		}
+	}
+
+	if needCreate {
+		e.UUID = uuid.NewV1().String()
+		e.GetLogger().Println("Fetch uuid of server failed, Create new:", e.UUID)
+
+		file.Write(bytes.NewBufferString(e.UUID).Bytes())
+		file.Sync()
+	}
+
+	file.Close()
+
 	return e.UUID
 }
 
