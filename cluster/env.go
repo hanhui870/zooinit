@@ -34,6 +34,8 @@ type Env interface {
 	GetQurorum() int
 
 	GetUUID() string
+
+	GetHostname() string
 }
 
 func GuaranteeSingleRun(env Env) {
@@ -132,6 +134,15 @@ func (e *BaseInfo) GetLogger() *loglocal.BufferedFileLogger {
 
 func (e *BaseInfo) GetNodename() string {
 	return e.Service + "-" + e.LocalIP.String()
+}
+
+func (e *BaseInfo) GetHostname() string {
+	host, err := os.Hostname()
+	if err != nil {
+		host = e.GetLocalIP().String()
+	}
+
+	return host
 }
 
 // Get Pid file path
