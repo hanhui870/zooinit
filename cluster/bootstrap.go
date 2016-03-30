@@ -122,7 +122,7 @@ func Bootstrap(c *cli.Context) {
 
 	env = NewEnvInfo(iniobj, backend, service, c)
 
-	GuaranteeSingleRun(env)
+	env.GuaranteeSingleRun()
 
 	//flush last log info
 	defer env.Logger.Sync()
@@ -234,7 +234,8 @@ func initializeClusterDiscoveryInfo() {
 	}
 
 	// Create qurorum in order node
-	resp, err = kvApi.Conn().CreateInOrder(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, env.LocalIP.String(), nil)
+	election := NewElectionMemberEnv(env)
+	resp, err = kvApi.Conn().CreateInOrder(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, election.ToJson(), nil)
 	if err != nil {
 		env.Logger.Fatalln("Etcd.Api() CreateInOrder error:", err)
 	} else {
@@ -347,29 +348,6 @@ func loopUntilQurorumIsReached() {
 	}
 }
 
-func getLastestNodeList() ([]string, error) {
-	//flush last log info
-	defer env.Logger.Sync()
-
-	kvApi := getClientKeysApi()
-
-	resp, err := kvApi.Conn().Get(etcd.Context(), env.discoveryPath+CLUSTER_ELECTION_DIR, &client.GetOptions{Recursive: true, Sort: true})
-	if err != nil {
-		return nil, err
-	} else {
-		var nodeList []string
-		for _, node := range resp.Node.Nodes {
-			if node.Dir || !etcd.CheckInOrderKeyFormat(node.Key) {
-				continue
-			}
-			nodeList = append(nodeList, node.Value)
-		}
-
-		nodeList = utility.RemoveDuplicateInOrder(nodeList)
-		return nodeList, nil
-	}
-}
-
 func bootstrapLocalClusterMember() {
 	//flush last log info
 	defer env.Logger.Sync()
@@ -458,6 +436,7 @@ func getCallCmdENVSet(event string) []string {
 	envs := []string{"ZOOINIT_CLUSTER_BACKEND=" + env.clusterBackend}
 	envs = append(envs, "ZOOINIT_CLUSTER_SERVICE="+env.Service)
 	envs = append(envs, "ZOOINIT_CLUSTER_EVENT="+event)
+	//提交需要保持原传递数据的qurorum顺序问题， Add UUID。添加config/uuid-map表示 map[int] uuid类型，不能直接用数组，后期也难维护。传给脚本是map[int] ip。
 	envs = append(envs, "ZOOINIT_SERVER_IP_LIST="+strings.Join(membersElected, ","))
 	envs = append(envs, "ZOOINIT_LOCAL_IP="+env.LocalIP.String())
 

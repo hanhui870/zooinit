@@ -3,7 +3,6 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"time"
 )
 

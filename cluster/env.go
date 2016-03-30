@@ -38,39 +38,6 @@ type Env interface {
 	GetHostname() string
 }
 
-func GuaranteeSingleRun(env Env) {
-	defer env.GetLogger().Sync()
-
-	pid := env.GetPidPath() + "/" + env.GetService() + ".pid"
-
-	env.GetLogger().Println("Write and lock pid file:", pid)
-
-	//pid create dir if needed
-	err := os.MkdirAll(filepath.Dir(pid), loglocal.DEFAULT_LOGDIR_MODE)
-	if err != nil {
-		env.GetLogger().Fatalln("Create pid dir error, info:", err)
-	}
-
-	// O_EXCL used with O_CREATE, file must not exist
-	file, err := os.OpenFile(pid, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
-	if err != nil {
-		env.GetLogger().Fatalln("Create pid file failed of os.OpenFile(), info:", err)
-	}
-	procid := os.Getpid()
-
-	//The file descriptor is valid only until f.Close is called or f is garbage collected.
-	err = syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
-	if err != nil {
-		env.GetLogger().Fatalln("syscall.Flock pid error, info:", err)
-	}
-
-	file.Write(bytes.NewBufferString(strconv.Itoa(procid)).Bytes())
-	file.Sync()
-
-	//No need to close
-	//file.Close()
-}
-
 type BaseInfo struct {
 	// uuid of service
 	UUID string
@@ -174,4 +141,37 @@ func (e *BaseInfo) RegisterSignalWatch() {
 	e.Sc = sg
 
 	sg.RegisterAndServe()
+}
+
+func (e *BaseInfo) GuaranteeSingleRun() {
+	defer e.GetLogger().Sync()
+
+	pid := e.GetPidPath() + "/" + e.GetService() + ".pid"
+
+	e.GetLogger().Println("Write and lock pid file:", pid)
+
+	//pid create dir if needed
+	err := os.MkdirAll(filepath.Dir(pid), loglocal.DEFAULT_LOGDIR_MODE)
+	if err != nil {
+		e.GetLogger().Fatalln("Create pid dir error, info:", err)
+	}
+
+	// O_EXCL used with O_CREATE, file must not exist
+	file, err := os.OpenFile(pid, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	if err != nil {
+		e.GetLogger().Fatalln("Create pid file failed of os.OpenFile(), info:", err)
+	}
+	procid := os.Getpid()
+
+	//The file descriptor is valid only until f.Close is called or f is garbage collected.
+	err = syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+	if err != nil {
+		e.GetLogger().Fatalln("syscall.Flock pid error, info:", err)
+	}
+
+	file.Write(bytes.NewBufferString(strconv.Itoa(procid)).Bytes())
+	file.Sync()
+
+	//No need to close
+	//file.Close()
 }

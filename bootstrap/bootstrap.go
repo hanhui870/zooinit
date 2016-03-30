@@ -67,7 +67,7 @@ func Bootstrap(c *cli.Context) {
 
 	env = NewEnvInfo(iniobj, c)
 
-	cluster.GuaranteeSingleRun(env)
+	env.GuaranteeSingleRun()
 
 	//register signal watcher
 	env.RegisterSignalWatch()
