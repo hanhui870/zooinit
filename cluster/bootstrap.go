@@ -205,7 +205,7 @@ func initializeClusterDiscoveryInfo() {
 					env.Logger.Println("Zooinit has found cluster has started before, will continue to restart...")
 
 					//remove /election out dated item compare to /members
-					removeOutDateClusterMemberElection()
+					removeOutDateClusterMemberElectionAndUUIDCheck()
 
 					clusterIsBootedBefore = true
 				} else {
@@ -837,7 +837,7 @@ func clusterMemberRestartRoutine() {
 // remove /election out dated item compare to /members
 // can also remove self, because will register later
 // 03.30 must use ip and uuid compare, for ip may change.
-func removeOutDateClusterMemberElection() {
+func removeOutDateClusterMemberElectionAndUUIDCheck() {
 	//flush last log info
 	defer env.Logger.Sync()
 
@@ -854,8 +854,12 @@ func removeOutDateClusterMemberElection() {
 	env.Logger.Println("Fetched latest membesrs:", memIpList)
 
 	uuidList, err := getClusterBootedUUIDs()
+	//reboot must have uuidList
 	if err != nil {
 		env.Logger.Fatalln("Failed to call getClusterBootedUUIDs:", err)
+	}
+	if !utility.InSlice(uuidList, env.UUID) {
+		env.Logger.Fatalln("Endpoint uuid " + em.Uuid + " is not in the booted uuidList, will give up reboot and terminate.")
 	}
 
 	kvApi := getClientKeysApi()
