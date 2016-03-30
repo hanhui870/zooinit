@@ -437,7 +437,6 @@ func getCallCmdENVSet(event string) []string {
 	envs := []string{"ZOOINIT_CLUSTER_BACKEND=" + env.clusterBackend}
 	envs = append(envs, "ZOOINIT_CLUSTER_SERVICE="+env.Service)
 	envs = append(envs, "ZOOINIT_CLUSTER_EVENT="+event)
-	//提交需要保持原传递数据的qurorum顺序问题， Add UUID。添加config/uuid-map表示 map[int] uuid类型，不能直接用数组，后期也难维护。传给脚本是map[int] ip。
 	envs = append(envs, "ZOOINIT_SERVER_IP_LIST="+strings.Join(membersElected, ","))
 	envs = append(envs, "ZOOINIT_LOCAL_IP="+env.LocalIP.String())
 
