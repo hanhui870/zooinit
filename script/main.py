@@ -9,6 +9,8 @@ from cluster import utils
 from cluster.info import Info
 from cluster import signalhandler
 
+# add library path to autoload path
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__)) + "/library")
 
 # former import
 # from cluster.consul import start
@@ -19,6 +21,8 @@ from cluster import signalhandler
 # sys.path include pwd
 def main():
     utils.initUnbufferedStdoutIO()
+
+    print("Python sys.path:" + str(sys.path))
 
     silent = os.getenv("ZOOINIT_SILENT_ENV_INFO")
     # None or nq True display debug info
