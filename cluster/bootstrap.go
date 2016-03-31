@@ -396,7 +396,7 @@ func bootstrapLocalClusterMember() {
 }
 
 func getCallCmdInstance(logPrefix, event string) *exec.Cmd {
-	callCmd := exec.Command("bash", "-c", "script/main.py")
+	callCmd := exec.Command("bash", "-c", "script/entrypoint.sh")
 
 	loggerIOAdapter := log.NewLoggerIOAdapter(env.Logger)
 	loggerIOAdapter.SetPrefix(logPrefix)
