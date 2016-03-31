@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-./main.py
+scriptDir=`dirname $0`
+${scriptDir}/main.py
