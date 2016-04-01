@@ -15,6 +15,6 @@
 
     1. startup testcluster
         docker run -ti -P --net=host haimi:zooinit-cluster-zookeeper zooinit cluster -b=zookeeper -discover.target=http://192.168.4.220:2379 -ip.hint=192.168.4.108 zookeeperTestCluster
-        docker run -d -P --restart=always --net=host haimi:zooinit-cluster-zookeeper zooinit cluster -b=zookeeper -discover.target=http://192.168.4.220:2379 -ip.hint=192.168.4.108 zookeeperTestCluster
+        docker run -d -P --restart=always --net=host registry.alishui.com/haimi:zooinit-cluster-zookeeper zooinit cluster -b=zookeeper -discover.target=http://192.168.4.220:2379 -ip.hint=192.168.4.108 zookeeperTestCluster
 
 
