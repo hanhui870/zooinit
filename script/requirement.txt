@@ -1,0 +1,2 @@
+https://github.com/jplana/python-etcd.git
+dnspython3 urllib3
