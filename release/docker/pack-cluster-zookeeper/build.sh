@@ -70,8 +70,15 @@ docker run -v ${VolumePath}:${VolumePath} $ImageBuild bash -c "go build -a -ldfl
 
 echo -e "Will package go program into docker image...\nDir now:" `pwd`
 
+# add python extra library
+localLib=./library
+cp -a /Users/bruce/project/pythonlib ${localLib}
+
 #package code need no cache, because may change transfer files.
 docker build --no-cache -t haimi:zooinit-${Cluster} .
+
+# rm tmp python lib
+rm -rf ${localLib}
 
 if [ "$Debug" = "false" ]; then
     docker tag -f haimi:zooinit-${Cluster} ${Registry}/haimi:zooinit-${Cluster}

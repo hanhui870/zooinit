@@ -1,16 +1,17 @@
-#构建命令：docker build --no-cache -t zooinit-cluster-zookeeper .
-#run:
-#version: 0.1.0
-#构建命令：docker build -t haimi:zookeeper .
-#version: 0.1.0
-#version: 0.1.0 基于HAIMI_ZOOKEEPER_DIST，410M。
+#构建命令：docker build --no-cache -t haimi:zooinit-cluster-zookeeper .
 FROM haimi:zookeeper
 
 #MAINTAINER bruce@haimi.com
 
-ENV PATH=$PATH:/server/zooinit/bin
+ENV PATH=$PATH:/server/zooinit/bin \
+    PYTHONPATH="/usr/local/python"
+
 
 ADD transfer/ /server/zooinit/
+# can not use absolute dir
+ADD library/ ${PYTHONPATH}
+
+RUN mkdir -p ${PYTHONPATH}
 
 #script path need under work dir
 WORKDIR /server/zooinit/
