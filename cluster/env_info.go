@@ -2,14 +2,11 @@ package cluster
 
 import (
 	"log"
-	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/go-ini/ini"
 
 	"zooinit/config"
-	loglocal "zooinit/log"
-	"zooinit/utility"
 )
 
 // This cluster service bootstrap env info
@@ -23,9 +20,6 @@ type envInfo struct {
 	discoveryMethod string
 	discoveryTarget string
 	discoveryPath   string
-
-	// Ip hint use to found which ip for boot bind
-	iphint string
 
 	// boot event related
 	eventOnPreRegist       string
@@ -65,40 +59,16 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 		log.Fatalln("Config of service is empty.")
 	}
 
-	// key for process now
-	var keyNow string
+	// parse base info
+	obj.ParseConfigFile(sec, c)
 
-	keyNow = "pid.path"
-	obj.PidPath = config.GetValueString(keyNow, sec, c)
-	if obj.PidPath == "" {
-		log.Fatalln("Config of " + keyNow + " is empty.")
-	}
-
-	keyNow = "log.channel"
-	obj.LogChannel = config.GetValueString(keyNow, sec, c)
-	if obj.LogChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, obj.LogChannel) {
-		log.Fatalln("Config of " + keyNow + " must be one of file/stdout/multi.")
-	}
-
-	keyNow = "log.path"
-	obj.LogPath = config.GetValueString(keyNow, sec, c)
-	if obj.LogPath == "" {
-		log.Fatalln("Config of log.path is empty, log to stdout also need.")
-	}
-
-	obj.clusterBackend = backend
-
-	// Construct logger instance
-	if obj.LogChannel == "file" {
-		obj.Logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.LogPath, obj.Service))
-	} else if obj.LogChannel == "stdout" {
-		obj.Logger = loglocal.GetBufferedLogger()
-	} else if obj.LogChannel == "multi" {
-		obj.Logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.LogPath, obj.Service))
-	}
 	//flush last log info
 	defer obj.Logger.Sync()
 
+	obj.clusterBackend = backend
+
+	// key for process now
+	var keyNow string
 	obj.Logger.Println("Service name of cluster is:", obj.Service)
 
 	keyNow = "discover.method"
@@ -119,41 +89,6 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.discoveryPath = obj.discoveryPath + "/" + obj.Service
-
-	keyNow = "qurorum"
-	qurorum, err := config.GetValueInt(keyNow, sec, c)
-	if err != nil {
-		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
-	}
-	if qurorum < 3 {
-		obj.Logger.Fatalln("Config of " + keyNow + " must >=3")
-	}
-	obj.Qurorum = qurorum
-
-	keyNow = "timeout"
-	timeout, err := config.GetValueFloat64(keyNow, sec, c)
-	if err != nil {
-		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
-	}
-	if timeout == 0 {
-		obj.Timeout = CLUSTER_BOOTSTRAP_TIMEOUT
-	} else {
-		obj.Timeout = time.Duration(int(timeout * 1000000000))
-	}
-
-	keyNow = "health.check.interval"
-	checkInterval, err := config.GetValueFloat64(keyNow, sec, c)
-	if err != nil {
-		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
-	}
-	if checkInterval > 60 || checkInterval < 1 {
-		obj.Logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
-	}
-	if checkInterval == 0 {
-		obj.HealthCheckInterval = CLUSTER_HEALTH_CHECK_INTERVAL
-	} else {
-		obj.HealthCheckInterval = time.Duration(int(checkInterval * 1000000000))
-	}
 
 	// Event process
 	keyNow = "EVENT_ON_PRE_REGIST"
@@ -203,20 +138,6 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 	} else {
 		obj.Logger.Println("Found event "+keyNow+":", obj.eventOnHealthCheck)
 	}
-
-	keyNow = "ip.hint"
-	obj.iphint = config.GetValueString(keyNow, sec, c)
-	if obj.iphint == "" {
-		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
-	}
-
-	// Find localip
-	localip, err := utility.GetLocalIPWithIntranet(obj.iphint)
-	if err != nil {
-		obj.Logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
-	}
-	obj.LocalIP = localip
-	obj.Logger.Println("Found localip for boot:", obj.LocalIP)
 
 	// store app config, optional
 	appSection := clusterSection + ".config"

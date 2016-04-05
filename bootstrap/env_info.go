@@ -5,14 +5,12 @@ import (
 	"net"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/go-ini/ini"
 
 	"zooinit/cluster"
 	"zooinit/config"
-	loglocal "zooinit/log"
 	"zooinit/utility"
 )
 
@@ -64,38 +62,14 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 		log.Fatalln("Config of service is empty.")
 	}
 
-	// key for process now
-	var keyNow string
+	// parse base info
+	obj.ParseConfigFile(sec, c)
 
-	keyNow = "pid.path"
-	obj.PidPath = config.GetValueString(keyNow, sec, c)
-	if obj.PidPath == "" {
-		log.Fatalln("Config of " + keyNow + " is empty.")
-	}
-
-	keyNow = "log.channel"
-	obj.LogChannel = config.GetValueString(keyNow, sec, c)
-	if obj.LogChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, obj.LogChannel) {
-		log.Fatalln("Config of " + keyNow + " must be one of file/stdout/multi.")
-	}
-
-	keyNow = "log.path"
-	obj.LogPath = config.GetValueString(keyNow, sec, c)
-	if obj.LogPath == "" {
-		log.Fatalln("Config of " + keyNow + " is empty.")
-	}
-
-	// Construct logger instance
-	if obj.LogChannel == "file" {
-		obj.Logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(obj.LogPath, obj.Service))
-	} else if obj.LogChannel == "stdout" {
-		obj.Logger = loglocal.GetBufferedLogger()
-	} else if obj.LogChannel == "multi" {
-		obj.Logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(obj.LogPath, obj.Service))
-	}
 	//flush last log info
 	defer obj.Logger.Sync()
 
+	// key for process now
+	var keyNow string
 	obj.Logger.Println("Configure file parsed. Waiting to be boostrapped.")
 
 	keyNow = "discovery"
@@ -136,41 +110,6 @@ func NewEnvInfo(iniobj *ini.File, c *cli.Context) *envInfo {
 		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 	obj.internalWalDir = path
-
-	keyNow = "qurorum"
-	qurorum, err := config.GetValueInt(keyNow, sec, c)
-	if err != nil {
-		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
-	}
-	if qurorum < 3 {
-		obj.Logger.Fatalln("Config of " + keyNow + " must >=3")
-	}
-	obj.Qurorum = qurorum
-
-	keyNow = "timeout"
-	timeout, err := config.GetValueFloat64(keyNow, sec, c)
-	if err != nil {
-		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
-	}
-	if timeout == 0 {
-		obj.Timeout = CLUSTER_BOOTSTRAP_TIMEOUT
-	} else {
-		obj.Timeout = time.Duration(int(timeout * 1000000000))
-	}
-
-	keyNow = "health.check.interval"
-	checkInterval, err := config.GetValueFloat64(keyNow, sec, c)
-	if err != nil {
-		obj.Logger.Fatalln("Config of "+keyNow+" is error:", err)
-	}
-	if checkInterval > 60 || checkInterval < 1 {
-		obj.Logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
-	}
-	if checkInterval == 0 {
-		obj.HealthCheckInterval = cluster.CLUSTER_HEALTH_CHECK_INTERVAL
-	} else {
-		obj.HealthCheckInterval = time.Duration(int(checkInterval * 1000000000))
-	}
 
 	keyNow = "boot.cmd"
 	obj.cmd = config.GetValueString(keyNow, sec, c)

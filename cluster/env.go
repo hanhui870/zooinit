@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"bytes"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -10,9 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/codegangsta/cli"
+	"github.com/go-ini/ini"
 	"github.com/twinj/uuid"
 
 	"io/ioutil"
+	"zooinit/config"
 	loglocal "zooinit/log"
 	"zooinit/utility"
 )
@@ -56,6 +60,8 @@ type BaseInfo struct {
 
 	// localIP for boot
 	LocalIP net.IP
+	// Ip hint use to found which ip for boot bind
+	iphint string
 
 	// Configuration of runtime log channel: file, write to file; stdout, write to stdout; multi, write both.
 	LogChannel string
@@ -69,6 +75,90 @@ type BaseInfo struct {
 
 	// Logger instance for service
 	Logger *loglocal.BufferedFileLogger
+}
+
+func (e *BaseInfo) ParseConfigFile(sec *ini.Section, c *cli.Context) {
+	// key for process now
+	var keyNow string
+
+	keyNow = "log.channel"
+	e.LogChannel = config.GetValueString(keyNow, sec, c)
+	if e.LogChannel == "" || !utility.InSlice([]string{loglocal.LOG_FILE, loglocal.LOG_STDOUT, loglocal.LOG_MULTI}, e.LogChannel) {
+		log.Fatalln("Config of " + keyNow + " must be one of file/stdout/multi.")
+	}
+
+	keyNow = "log.path"
+	e.LogPath = config.GetValueString(keyNow, sec, c)
+	if e.LogPath == "" {
+		log.Fatalln("Config of " + keyNow + " is empty.")
+	}
+
+	// Construct logger instance
+	if e.LogChannel == "file" {
+		e.Logger = loglocal.GetFileLogger(loglocal.GenerateFileLogPathName(e.LogPath, e.Service))
+	} else if e.LogChannel == "stdout" {
+		e.Logger = loglocal.GetBufferedLogger()
+	} else if e.LogChannel == "multi" {
+		e.Logger = loglocal.GetConsoleFileMultiLogger(loglocal.GenerateFileLogPathName(e.LogPath, e.Service))
+	}
+
+	//flush last log info
+	defer e.Logger.Sync()
+
+	keyNow = "pid.path"
+	e.PidPath = config.GetValueString(keyNow, sec, c)
+	if e.PidPath == "" {
+		e.Logger.Fatalln("Config of " + keyNow + " is empty.")
+	}
+
+	keyNow = "qurorum"
+	qurorum, err := config.GetValueInt(keyNow, sec, c)
+	if err != nil {
+		e.Logger.Fatalln("Config of "+keyNow+" is error:", err)
+	}
+	if qurorum < 3 {
+		e.Logger.Fatalln("Config of " + keyNow + " must >=3")
+	}
+	e.Qurorum = qurorum
+
+	keyNow = "timeout"
+	timeout, err := config.GetValueFloat64(keyNow, sec, c)
+	if err != nil {
+		e.Logger.Fatalln("Config of "+keyNow+" is error:", err)
+	}
+	if timeout == 0 {
+		e.Timeout = CLUSTER_BOOTSTRAP_TIMEOUT
+	} else {
+		e.Timeout = time.Duration(int(timeout * 1000000000))
+	}
+
+	keyNow = "health.check.interval"
+	checkInterval, err := config.GetValueFloat64(keyNow, sec, c)
+	if err != nil {
+		e.Logger.Fatalln("Config of "+keyNow+" is error:", err)
+	}
+	if checkInterval > 60 || checkInterval < 1 {
+		e.Logger.Fatalln("Config of " + keyNow + " must be between 1-60 sec.")
+	}
+	if checkInterval == 0 {
+		e.HealthCheckInterval = CLUSTER_HEALTH_CHECK_INTERVAL
+	} else {
+		e.HealthCheckInterval = time.Duration(int(checkInterval * 1000000000))
+	}
+
+	keyNow = "ip.hint"
+	e.iphint = config.GetValueString(keyNow, sec, c)
+	if e.iphint == "" {
+		e.Logger.Fatalln("Config of " + keyNow + " is empty.")
+	}
+
+	// Find localip
+	localip, err := utility.GetLocalIPWithIntranet(e.iphint)
+	if err != nil {
+		e.Logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
+	}
+	e.LocalIP = localip
+	e.Logger.Println("Found localip for boot:", e.LocalIP)
 }
 
 func (e *BaseInfo) CreateUUID() string {
