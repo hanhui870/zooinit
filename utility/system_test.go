@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"encoding/json"
 	"github.com/twinj/uuid"
 	"net"
 	"reflect"
@@ -49,6 +50,23 @@ func TestFetchIPList(t *testing.T) {
 
 func TestUUIDGens(t *testing.T) {
 	t.Log("New gen UUID:", uuid.NewV1().String())
+}
+
+func TestUUIDIpMapNormal(t *testing.T) {
+	var list map[string]string
+	list = make(map[string]string)
+	list["uuu-dddd-1"] = "192.168.4.221"
+	list["uuu-dddd-2"] = "192.168.4.222"
+	list["uuu-dddd-3"] = "192.168.4.223"
+	list["uuu-dddd-4"] = "192.168.4.224"
+
+	b, err := json.Marshal(list)
+	if err == nil {
+		t.Log("UUID map:", string(b))
+	} else {
+		t.Error("UUID map error:", string(b))
+	}
+
 }
 
 func TestParseCmdStringWithParams(t *testing.T) {

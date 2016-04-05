@@ -157,6 +157,18 @@ func setClusterBootedUUIDs(uuidList []string) {
 		} else {
 			env.Logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED_UUIDS+" ok, uuidList:", uuidList, resp)
 		}
+
+		// set boot uuid map
+		buffer, err := json.Marshal(uuidMap)
+		if err != nil {
+			env.Logger.Fatalln("Create UUID map JSON error:", err)
+		}
+		resp, err = kvApi.Conn().Set(etcd.Context(), env.discoveryPath+CLUSTER_CONFIG_DIR_BOOTED_UUID_MAP, string(buffer), &client.SetOptions{PrevExist: client.PrevNoExist})
+		if err != nil {
+			env.Logger.Fatalln("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED_UUID_MAP+" error:", err)
+		} else {
+			env.Logger.Println("Etcd.Api() set "+CLUSTER_CONFIG_DIR_BOOTED_UUID_MAP+" ok, JSON:", string(buffer), resp)
+		}
 	}
 }
 

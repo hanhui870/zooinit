@@ -41,7 +41,9 @@ const (
 	CLUSTER_CONFIG_DIR_BOOTED = CLUSTER_CONFIG_DIR + "/booted"
 	// booted uuid of servers
 	CLUSTER_CONFIG_DIR_BOOTED_UUIDS = CLUSTER_CONFIG_DIR + "/booted_uuids"
-	CLUSTER_ELECTION_DIR            = "/election"
+	// map uuid of servers ip: uuid->ip
+	CLUSTER_CONFIG_DIR_BOOTED_UUID_MAP = CLUSTER_CONFIG_DIR + "/booted_uuid_map"
+	CLUSTER_ELECTION_DIR               = "/election"
 	// 6. check health update this
 	CLUSTER_MEMBER_DIR = "/members"
 	// member node ttl
