@@ -59,17 +59,38 @@ func main() {
 		Usage: "Configuration of runtime log path.",
 	}
 
+	// args used to find local ip.
+	ipLocal := &cli.StringFlag{
+		Name:  "ip.local",
+		Value: "",
+		Usage: "Ip local for boot ip, overwrite all other setting.",
+	}
+	ipMethod := &cli.StringFlag{
+		Name:  "ip.method",
+		Value: "",
+		Usage: "Ip method use to find ip for boot bind, available:default, netmask, interface. See config.ini for detail.",
+	}
+	ipHint := &cli.StringFlag{
+		Name:  "ip.hint",
+		Value: "",
+		Usage: "Ip hint for find ip, with real the same netmask. ip.method: default.",
+	}
+	ipNetmask := &cli.StringFlag{
+		Name:  "ip.netmask",
+		Value: "",
+		Usage: "Ip netmask for find ip, with -ip.netmask=255.0.0.0. ip.method: netmask.",
+	}
+	ipInterface := &cli.StringFlag{
+		Name:  "ip.interface",
+		Value: "",
+		Usage: "Ip interface for find ip, with -ip.interface=eth0. wip.method: interface.",
+	}
+
 	// Used for cluster
 	backendFlag := &cli.StringFlag{
 		Name:  "backend, b",
 		Value: "",
 		Usage: "Backend name of cluster, eg: consul, etcd, zookeeper...",
-	}
-
-	ipHint := &cli.StringFlag{
-		Name:  "ip.hint",
-		Value: "",
-		Usage: "Ip hint use to found which ip for boot bind, will automatically find intranet ip.",
 	}
 
 	discoverMethod := &cli.StringFlag{
@@ -87,7 +108,7 @@ func main() {
 	discoverPathPrefix := &cli.StringFlag{
 		Name:  "discover.path.prefix",
 		Value: "",
-		Usage: "Ip hint use to found which ip for boot bind, will automatically find intranet ip.",
+		Usage: "Discovery service path prefix registered in etcd boot cluster.",
 	}
 
 	// Used for bootstrap etcd
@@ -148,7 +169,7 @@ func main() {
 			Flags: []cli.Flag{
 				discovery, internal, internalData, internalWal,
 				bootcmd, bootData, bootWal, bootSnap,
-				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath, pidPath,
+				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath, pidPath, ipLocal, ipMethod, ipHint, ipNetmask, ipInterface,
 			},
 		},
 		{
@@ -156,8 +177,8 @@ func main() {
 			Usage:  "Usage: " + os.Args[0] + " cluster -f config.ini -b backend service \nBootstrop the cluster configured in the configuration file.",
 			Action: cluster.Bootstrap,
 			Flags: []cli.Flag{
-				backendFlag, ipHint, discoverMethod, discoverTarget, discoverPathPrefix,
-				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath, pidPath,
+				backendFlag, discoverMethod, discoverTarget, discoverPathPrefix,
+				cfgFlag, qurorum, healthCheck, timeout, logChannel, logPath, pidPath, ipLocal, ipMethod, ipHint, ipNetmask, ipInterface,
 			},
 		},
 	}

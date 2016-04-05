@@ -60,8 +60,6 @@ type BaseInfo struct {
 
 	// localIP for boot
 	LocalIP net.IP
-	// Ip hint use to found which ip for boot bind
-	iphint string
 
 	// Configuration of runtime log channel: file, write to file; stdout, write to stdout; multi, write both.
 	LogChannel string
@@ -146,19 +144,70 @@ func (e *BaseInfo) ParseConfigFile(sec *ini.Section, c *cli.Context) {
 		e.HealthCheckInterval = time.Duration(int(checkInterval * 1000000000))
 	}
 
-	keyNow = "ip.hint"
-	e.iphint = config.GetValueString(keyNow, sec, c)
-	if e.iphint == "" {
-		e.Logger.Fatalln("Config of " + keyNow + " is empty.")
-	}
+	// Find localip for boot
+	// -ip.local is proior
+	keyNow = "ip.local"
+	ipLocal := config.GetValueString(keyNow, sec, c)
+	if ipLocal != "" {
+		e.LocalIP = ipLocal
+		e.Logger.Println("Use ip.local config find localip for boot:", e.LocalIP)
+	} else {
+		keyNow = "ip.method"
+		ipMethod := config.GetValueString(keyNow, sec, c)
+		if ipMethod == "" {
+			e.Logger.Fatalln("Config of " + keyNow + " is empty.")
+		}
 
-	// Find localip
-	localip, err := utility.GetLocalIPWithIntranet(e.iphint)
-	if err != nil {
-		e.Logger.Fatalln("utility.GetLocalIPWithIntranet Please check configuration of discovery is correct.")
+		switch ipMethod {
+		case "netmask":
+			keyNow = "ip.hint"
+			iphint := config.GetValueString(keyNow, sec, c)
+			if iphint == "" {
+				e.Logger.Fatalln("Config of " + keyNow + " is empty.")
+			}
+			keyNow = "ip.netmask"
+			netmask := config.GetValueString(keyNow, sec, c)
+			if netmask == "" {
+				e.Logger.Fatalln("Config of " + keyNow + " is empty.")
+			}
+			localip, err := utility.GetLocalIPWithIntranetIPMask(iphint, netmask)
+			if err != nil {
+				e.Logger.Fatalln("utility.GetLocalIPWithIntranetIPMask Error, err:", err, "-ip.hint:", iphint, "-ip.netmask", netmask)
+			}
+			e.LocalIP = localip
+
+		case "interface":
+			keyNow = "ip.interface"
+			fname := config.GetValueString(keyNow, sec, c)
+			if fname == "" {
+				e.Logger.Fatalln("Config of " + keyNow + " is empty.")
+			}
+			localip, err := utility.GetLocalIPWithInterfaceName(fname)
+			if err != nil {
+				e.Logger.Fatalln("utility.GetLocalIPWithInterfaceName Error, err:", err, "-ip.interface:", fname)
+			}
+			e.LocalIP = localip
+		case "default":
+			keyNow = "ip.hint"
+			iphint := config.GetValueString(keyNow, sec, c)
+			if iphint == "" {
+				e.Logger.Fatalln("Config of " + keyNow + " is empty.")
+			}
+			localip, err := utility.GetLocalIPWithIntranet(iphint)
+			if err != nil {
+				e.Logger.Fatalln("utility.GetLocalIPWithIntranet Error, err:", err, "-ip.hint:", iphint)
+			}
+			e.LocalIP = localip
+		default:
+			e.Logger.Fatalln("Unsupport ip.method value:", ipMethod)
+		}
+
+		if e.LocalIP == nil {
+			e.Logger.Fatalln("Error while finding local ip for boot: with empty result.")
+		} else {
+			e.Logger.Println("Found localip for boot:", e.LocalIP)
+		}
 	}
-	e.LocalIP = localip
-	e.Logger.Println("Found localip for boot:", e.LocalIP)
 }
 
 func (e *BaseInfo) CreateUUID() string {
