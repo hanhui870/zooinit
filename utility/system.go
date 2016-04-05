@@ -3,6 +3,7 @@ package utility
 import (
 	"errors"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -58,7 +59,7 @@ func HasIpAddress(findip string) bool {
 	return false
 }
 
-// Find the mask of the IP Adress
+// Find the real mask of the IP Adress
 func MaskOFIpAddress(findip string) net.IPMask {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -111,6 +112,101 @@ func GetLocalIPWithIntranet(findip string) (net.IP, error) {
 	}
 
 	return nil, errors.New("Not found.")
+}
+
+func GetLocalIPWithIntranetIPMask(findip string, maskString string) (net.IP, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	mask, err := BuildIPV4MaskFromString(maskString)
+	if err != nil {
+		return nil, err
+	}
+
+	ipobj := net.ParseIP(findip)
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			switch v := addr.(type) {
+			case *net.IPNet:
+				if ipobj.Mask(mask).String() == v.IP.Mask(mask).String() {
+					return v.IP, nil
+				}
+			}
+		}
+	}
+
+	return nil, errors.New("Not found.")
+}
+
+func GetLocalIPWithInterfaceName(fname string) (net.IP, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			continue
+		}
+
+		//check the interface name
+		if i.Name != fname {
+			continue
+		}
+
+		//many ip fetch the the first one.
+		for _, addr := range addrs {
+			switch v := addr.(type) {
+			case *net.IPNet:
+				return v.IP, nil
+			}
+		}
+	}
+
+	return nil, errors.New("Not found.")
+}
+
+func BuildIPV4MaskFromString(mask string) (net.IPMask, error) {
+	list := strings.Split(mask, ".")
+	if len(list) != 4 {
+		return nil, errors.New("IP V4 mask format error.")
+	}
+
+	var p1, p2, p3, p4 byte
+	i, err := strconv.ParseInt(list[0], 10, 32)
+	if err != nil {
+		return nil, err
+	}
+	p1 = byte(i) & 0xFF
+
+	i, err = strconv.ParseInt(list[1], 10, 32)
+	if err != nil {
+		return nil, err
+	}
+	p2 = byte(i) & 0xFF
+
+	i, err = strconv.ParseInt(list[2], 10, 32)
+	if err != nil {
+		return nil, err
+	}
+	p3 = byte(i) & 0xFF
+
+	i, err = strconv.ParseInt(list[3], 10, 32)
+	if err != nil {
+		return nil, err
+	}
+	p4 = byte(i) & 0xFF
+
+	result := net.IPv4Mask(p1, p2, p3, p4)
+	return result, nil
 }
 
 // Improve for quoted string

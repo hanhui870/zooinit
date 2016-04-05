@@ -28,13 +28,13 @@ func TestFetchIPList(t *testing.T) {
 	ip := net.IPv4(192, 168, 4, 108)
 	t.Log("IP mask of 192.168.4.108: ", ip.Mask(net.IPv4Mask(255, 255, 255, 0)))
 	//actual
-	actualMask := MaskOFIpAddress("192.168.4.108")
-	t.Log("IP mask of 192.168.4.108: ", actualMask.String())
+	actualMask := MaskOFIpAddress("192.168.4.123")
+	t.Log("IP mask of 192.168.4.123: ", actualMask.String())
 	t.Log("Actual IP mask of 192.168.4.108: ", ip.Mask(actualMask))
 
 	ip, err = GetLocalIPWithIntranet("192.168.4.199")
 	if err != nil {
-		t.Log("GetLocalIPWithIntranet of 192.168.4.199 Error:", err)
+		t.Error("GetLocalIPWithIntranet of 192.168.4.199 Error:", err)
 	} else {
 		t.Log("Find the smae intranet of 192.168.4.199: ", ip)
 	}
@@ -43,7 +43,51 @@ func TestFetchIPList(t *testing.T) {
 	if err != nil {
 		t.Log("GetLocalIPWithIntranet of 192.168.1.4 Error:", err)
 	} else {
-		t.Log("Find the smae intranet of 192.168.1.4: ", ip)
+		t.Log("Find the same intranet of 192.168.1.4: ", ip)
+	}
+
+	// ip mask test
+	mask, err := BuildIPV4MaskFromString("255.255.255.0")
+	if err != nil {
+		t.Log("BuildIPV4MaskFromString(255.255.255.0) Error:", err)
+	} else {
+		t.Log("BuildIPV4MaskFromString(255.255.255.0), result: ", mask.String())
+	}
+
+	// ip mask test
+	mask, err = BuildIPV4MaskFromString("255.255.128.0")
+	if err != nil {
+		t.Log("BuildIPV4MaskFromString(255.255.128.0) Error:", err)
+	} else {
+		t.Log("BuildIPV4MaskFromString(255.255.128.0), result: ", mask.String())
+	}
+
+	ip, err = GetLocalIPWithIntranetIPMask("192.168.1.4", "255.255.0.0")
+	if err != nil {
+		t.Log("GetLocalIPWithIntranetIPMask of 192.168.1.4 with mask 255.255.0.0 Error:", err)
+	} else {
+		t.Log("Find the same intranet of 192.168.1.4 with mask 255.255.0.0: ", ip)
+	}
+
+	ip, err = GetLocalIPWithInterfaceName("en0")
+	if err != nil {
+		t.Log("GetLocalIPWithInterfaceName of en0 Error:", err)
+	} else {
+		t.Log("Find the ip of iface en0: ", ip)
+	}
+
+	ip, err = GetLocalIPWithInterfaceName("en5")
+	if err != nil {
+		t.Log("GetLocalIPWithInterfaceName of en5 Error:", err)
+	} else {
+		t.Log("Find the ip of iface en5: ", ip)
+	}
+
+	ip, err = GetLocalIPWithInterfaceName("en5555")
+	if err != nil {
+		t.Log("GetLocalIPWithInterfaceName of en5555 Error:", err)
+	} else {
+		t.Log("Find the ip of iface en5555: ", ip)
 	}
 
 }
