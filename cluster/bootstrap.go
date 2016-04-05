@@ -462,6 +462,17 @@ func getCallCmdENVSet(event string) []string {
 		envs = append(envs, "ZOOINIT_MASTER_IP=")
 	}
 
+	if len(uuidMap) > 0 {
+		buf, err := json.Marshal(uuidMap)
+		if err == nil {
+			envs = append(envs, "ZOOINIT_SERVER_UUID_MAP="+string(buf))
+		} else {
+			env.Logger.Fatal("getCallCmdENVSet: json.Marshal(uuidMap) error:", err)
+		}
+	} else {
+		envs = append(envs, "ZOOINIT_SERVER_UUID_MAP=")
+	}
+
 	//defalut 0
 	envs = append(envs, "ZOOINIT_QURORUM="+strconv.Itoa(qurorumSize))
 
