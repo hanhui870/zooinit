@@ -488,6 +488,7 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 	go func() {
 		defer cmdWaitGroup.Done()
 
+		failedTimes := 0
 		for {
 			//Need init every call: callCmd.Start() error found: exec: already started
 			callCmd := getCallCmdInstance("OnPostStart: ", env.eventOnPostStart)
@@ -534,6 +535,11 @@ func loopUntilClusterIsUp(timeout time.Duration) (result bool, err error) {
 				}
 				break
 			}
+
+			failedTimes++
+			tts := time.Duration(failedTimes) * time.Second
+			env.Logger.Println("OnPostStart failed " + strconv.Itoa(failedTimes) + ", will sleep " + tts.String() + " continue to call event...")
+			time.Sleep(tts)
 		}
 	}()
 
