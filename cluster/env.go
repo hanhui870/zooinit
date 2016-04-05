@@ -149,7 +149,7 @@ func (e *BaseInfo) ParseConfigFile(sec *ini.Section, c *cli.Context) {
 	keyNow = "ip.local"
 	ipLocal := config.GetValueString(keyNow, sec, c)
 	if ipLocal != "" {
-		e.LocalIP = ipLocal
+		e.LocalIP = net.ParseIP(ipLocal)
 		e.Logger.Println("Use ip.local config find localip for boot:", e.LocalIP)
 	} else {
 		keyNow = "ip.method"
