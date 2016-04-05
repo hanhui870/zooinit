@@ -8,6 +8,10 @@
 export PYTHONPATH=`pwd`"/script"
 ```
 
+## Abount Specific qurorum usage
+
+    Cluster script can handle qurorum specific usage for its own purpose.
+
 ## Python3 depends
 
 1. http.client
