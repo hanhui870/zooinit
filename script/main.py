@@ -72,6 +72,15 @@ def main():
         if silent != True:
             print("Receive ZOOINIT_SERVER_IP_LIST: " + iplist)
 
+    uuidmap = os.getenv("ZOOINIT_SERVER_UUID_MAP")
+    if (uuidmap == None):
+        print("ENV ZOOINIT_SERVER_UUID_MAP is None, please check zooinit")
+        sys.exit(1)
+    else:
+        if silent != True:
+            print("Receive ZOOINIT_SERVER_UUID_MAP: " + uuidmap)
+
+
     localip = os.getenv("ZOOINIT_LOCAL_IP")
     if (localip == None):
         print("ENV ZOOINIT_LOCAL_IP is None, please check zooinit")
@@ -96,7 +105,7 @@ def main():
         if silent != True:
             print("Receive ZOOINIT_QURORUM: " + qurorum)
 
-    info = Info(event, service, backend, iplist, localip, masterip, qurorum)
+    info = Info(event, service, backend, iplist, localip, masterip, qurorum, uuidmap)
     if (not info.CheckLocalIp()):
         print("ZOOINIT_LOCAL_IP is not in the list ZOOINIT_SERVER_IP_LIST, give up.")
 

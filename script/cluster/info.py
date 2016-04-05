@@ -1,3 +1,6 @@
+import json
+
+
 class Info(object):
     'Cluster Boot info'
 
@@ -40,18 +43,20 @@ class Info(object):
         return self.Backend.capitalize() + "-" + self.Localip
 
     def GetUUIDMap(self):
-        # Json to map
-        list = self.Iplist.split(",")
+        if self.UUIDMap is None:
+            return dict()
 
-        result = []
-        for unit in list:
-            result.append(unit.strip(" \t"))
+        try:
+            result = json.loads(self.UUIDMap)
+        except Exception as err:
+            result = []
 
         return result
 
 
 if __name__ == "__main__":
-    info = Info("OnStart", "etcdCluster", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "3", "")
+    info = Info("OnStart", "etcdCluster", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.2", "192.168.1.2", "3",
+                '{"uuu-dddd-1":"192.168.4.221","uuu-dddd-2":"192.168.4.222","uuu-dddd-3":"192.168.4.223","uuu-dddd-4":"192.168.4.224"}')
     print(info.Backend, info.Iplist, info.Localip)
     print(info.GetIPListArray())
     print(info.CheckLocalIp())
@@ -66,7 +71,11 @@ if __name__ == "__main__":
     if info.GetBackendNodename() != "Etcd-192.168.1.2":
         print("Error: info.GetBackendNodename() != Consul-192.168.1.2")
 
-    info = Info("OnStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.5", "192.168.1.2", "3", "")
+    print(info.GetUUIDMap())
+    if info.GetUUIDMap()["uuu-dddd-3"] != "192.168.4.223":
+        print('Error: info.GetUUIDMap()["uuu-dddd-3"]!= "192.168.4.223"')
+
+    info = Info("OnStart", "etcd", "etcd", "192.168.1.1, 192.168.1.2", "192.168.1.5", "192.168.1.2", "3")
     print(info.Backend, info.Iplist, info.Localip)
     print(info.GetIPListArray())
     print(info.CheckLocalIp())
