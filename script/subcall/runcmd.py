@@ -11,6 +11,7 @@ def runWithStdoutSync(args):
         # multiple param
         print("Start process Now: " + " ".join(args))
 
+        # OSError: [Errno 8] Exec format error 可能是可执行文件不存在,导致报错.
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, bufsize=1)
 
         with proc.stdout as out:
@@ -43,7 +44,7 @@ def runWithStdoutSync(args):
         print(traceback.format_exc())
         print("Will kill subprocess and exit now...")
 
-        proc.kill()
+        proc.kill()  #UnboundLocalError: local variable 'proc' referenced before assignment
         proc.wait()
         sys.exit(1)
 
