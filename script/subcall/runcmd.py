@@ -62,4 +62,5 @@ if __name__ == "__main__":
                        "-data-dir=/tmp/consul",
                        "-bootstrap-expect", "3",
                        "-bind=192.168.4.108",
+                       "-node=consulTmpTest1-172.17.0.3",
                        "-client=192.168.4.108"])
