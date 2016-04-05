@@ -24,7 +24,7 @@ def run(info):
         # Found error:timed out while health check, continue loop... need to create every time.
         conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
         # check leader exists
-        conn.request("get", "/v1/health/node/" + info.GetNodename())
+        conn.request("get", "/v1/health/node/" + info.GetBackendNodename())
         resp = conn.getresponse()
         con = resp.read().decode("UTF-8").strip("")
 
@@ -34,11 +34,12 @@ def run(info):
             health = json.loads(con)
         except Exception as err:
             health = []
-        print("Health info " + info.GetNodename() + ":" + str(resp.status) + " " + str(resp.reason) + " " + str(health))
+        print("Health info " + info.GetBackendNodename() + ":" + str(resp.status) + " " + str(resp.reason) + " " + str(
+            health))
         if (len(health) > 0):
             healthinfo = health[0]
             if type(healthinfo) == type({}) and "Status" in healthinfo and healthinfo["Status"] == "passing":
-                print("Node " + info.GetNodename() + " health status check passing")
+                print("Node " + info.GetBackendNodename() + " health status check passing")
             else:
                 print("Node health check failed.")
                 sys.exit(1)
