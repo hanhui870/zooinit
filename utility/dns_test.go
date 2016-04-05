@@ -106,23 +106,7 @@ func TestSRVService(t *testing.T) {
 		t.Error("found rand.Intn(len(arr)) error.", rt)
 	}
 
-	srv, err := NewSRVServiceOfDomainAndService("xmpp-server", "tcp", "google.com")
-	if err != nil {
-		t.Error("NewSRVServiceOfDomainAndService google.com err:", err)
-	} else {
-		t.Logf("result google.com: %q", srv)
-
-		//panic: runtime error: invalid memory address or nil pointer dereference [recovered] May not exist.
-		//t.Log("Get Random one:", srv.GetRankedRandomService().cname)
-		rs, err := srv.GetRandomService()
-		if err != nil {
-			t.Error("GetRandomService err:", err)
-		} else {
-			t.Log("Get Random one:", rs.ip, rs.port)
-		}
-	}
-
-	srv, err = NewSRVServiceOfDomainAndService("etcd", "tcp", "discovery.alishui.com")
+	srv, err := NewSRVServiceOfDomainAndService("etcd", "tcp", "discovery.alishui.com")
 	if err != nil {
 		t.Error("NewSRVServiceOfDomainAndService discovery.alishui.com err:", err)
 	} else {
