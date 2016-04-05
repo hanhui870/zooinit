@@ -38,10 +38,6 @@ class Info(object):
     def GetNodename(self):
         return self.Service + "-" + self.Localip
 
-    # backend nodename, such as consul need its backend name.
-    def GetBackendNodename(self):
-        return self.Backend.capitalize() + "-" + self.Localip
-
     def GetUUIDMap(self):
         if self.UUIDMap is None:
             return dict()
@@ -66,10 +62,6 @@ if __name__ == "__main__":
     print("info.GetNodename():", info.GetNodename())
     if info.GetNodename() != "etcdCluster-192.168.1.2":
         print("Error: info.GetNodename() != Consul-192.168.1.2")
-
-    print("info.GetBackendNodename():", info.GetBackendNodename())
-    if info.GetBackendNodename() != "Etcd-192.168.1.2":
-        print("Error: info.GetBackendNodename() != Consul-192.168.1.2")
 
     print(info.GetUUIDMap())
     if info.GetUUIDMap()["uuu-dddd-3"] != "192.168.4.223":
