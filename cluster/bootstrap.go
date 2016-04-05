@@ -65,8 +65,10 @@ var (
 	endpointsSyncLock sync.Mutex
 
 	// Discovery service latest result members of election
-	membersElected  []string
-	uuidElected     []string
+	membersElected []string
+	uuidElected    []string
+	// map uuid=>ip
+	uuidMap         map[string]string
 	membersSyncLock sync.Mutex
 
 	// Election qurorum size
@@ -97,6 +99,7 @@ func init() {
 	restartMemberChannel = make(chan int)
 	// false
 	clusterIsBootedBefore = false
+	uuidMap = make(map[string]string, 3)
 }
 
 // Zooinit app runtime main line
@@ -338,6 +341,11 @@ func loopUntilQurorumIsReached() {
 				membersElected = nodeList[:qurorumSize]
 				uuidElected = uuidList[:qurorumSize]
 				membersSyncLock.Unlock()
+
+				// map uuid=>ip
+				for iter, ip := range membersElected {
+					uuidMap[uuidElected[iter]] = ip
+				}
 
 				env.Logger.Println("Get election qurorum finished:, IP:", membersElected, " UUID:", uuidElected)
 
