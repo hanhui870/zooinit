@@ -58,6 +58,7 @@ func TestSignalTest(t *testing.T) {
 	sg.EnableExit()
 	sg.RegisterAndServe()
 
-	time.Sleep(10 * time.Second)
+	//signal wait test.
+	time.Sleep(2 * time.Second)
 	t.Log("Wait completed.")
 }
