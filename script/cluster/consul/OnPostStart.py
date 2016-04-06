@@ -23,7 +23,7 @@ def run(info):
         try:
             conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
             # check leader exists
-            conn.request("get", "/v1/status/leader")
+            conn.request("GET", "/v1/status/leader")
             resp = conn.getresponse()
             con = resp.read().decode("UTF-8").strip("")
             # json need to docode too
@@ -34,7 +34,7 @@ def run(info):
 
             print("Get leader response:" + str(resp.status) + " " + str(resp.reason) + " " + str(leader))
 
-            conn.request("get", "/v1/status/peers")
+            conn.request("GET", "/v1/status/peers")
             resp = conn.getresponse()
             peers = resp.read().decode("UTF-8").strip("")
             print("Get peers response:" + str(resp.status) + " " + str(resp.reason) + " " + str(leader))

@@ -24,7 +24,7 @@ def run(info):
         # Found error:timed out while health check, continue loop... need to create every time.
         conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
         # check leader exists
-        conn.request("get", "/v1/health/node/" + info.GetNodename())
+        conn.request("GET", "/v1/health/node/" + info.GetNodename())
         resp = conn.getresponse()
         con = resp.read().decode("UTF-8").strip("")
 
