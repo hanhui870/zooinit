@@ -7,7 +7,7 @@ set -e
 
 source ../Constant.rc
 
-Cluster="cluster-consul"
+Cluster="cluster-etcd"
 
 docker pull ${Registry}/haimi:zooinit-${Cluster}
 docker tag -f ${Registry}/haimi:zooinit-${Cluster} haimi:zooinit-${Cluster}

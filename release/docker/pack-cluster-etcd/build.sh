@@ -22,7 +22,7 @@ cd "../compiler"
 sh -c "./build.sh"
 
 #package go program return dir now
-Cluster="cluster-consul"
+Cluster="cluster-etcd"
 cd "../pack-"$Cluster
 echo "Dir now:" `pwd`
 
