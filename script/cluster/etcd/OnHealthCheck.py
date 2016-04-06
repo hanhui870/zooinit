@@ -6,7 +6,7 @@ import json
 import traceback
 from http.client import HTTPConnection
 from cluster.info import Info
-from cluster.consul.Constant import Constant
+from cluster.etcd.Constant import Constant
 
 
 # check cluster member health, un health need exit
@@ -22,27 +22,24 @@ def run(info):
     try:
         # Found error:timed out while health check, continue loop... need to create every time.
         conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
-        # check leader exists
-        conn.request("get", "/v1/health/node/" + info.GetNodename())
+        # check health info, etcd case sensitive
+        conn.request("GET", "/health")
         resp = conn.getresponse()
         con = resp.read().decode("UTF-8").strip("")
 
         # json need to docode too
-        # raise ValueError(errmsg("Expecting value", s, err.value)) from None
         try:
             health = json.loads(con)
         except Exception as err:
-            health = []
-        print("Health info " + info.GetNodename() + ":" + str(resp.status) + " " + str(resp.reason) + " " + str(health))
-        if (len(health) > 0):
-            healthinfo = health[0]
-            if type(healthinfo) == type({}) and "Status" in healthinfo and healthinfo["Status"] == "passing":
-                print("Node " + info.GetNodename() + " health status check passing")
-            else:
-                print("Node health check failed.")
-                sys.exit(1)
+            health = ""
+
+        # str(resp.headers)
+        print("Get health response:" + str(resp.status) + " " + str(resp.reason) + " " + str(health))
+
+        if (con != "" and isinstance(health, object) and health["health"] == "true"):
+            print("Node " + info.GetNodename() + " health status check passing")
         else:
-            print("Node health info empty.")
+            print("Cluster health checks failed, /health info check failed.")
             sys.exit(1)
 
     except Exception as err:

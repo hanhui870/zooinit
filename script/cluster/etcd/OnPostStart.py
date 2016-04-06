@@ -43,7 +43,7 @@ def run(info):
                 print("Cluster status checks failed, /health info check failed.")
 
         except Exception as err:
-            print("Found error:" + str(err) + " while health check, continue loop...")
+            print("Found error:" + str(err) + " while check started, continue loop...")
             print(traceback.format_exc())
 
         # sleep 100ms no , 1s is enough
