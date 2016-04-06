@@ -5,9 +5,10 @@ import time
 import json
 import ipaddress
 import traceback
+import etcd
 from http.client import HTTPConnection
 from cluster.info import Info
-from cluster.consul.Constant import Constant
+from cluster.etcd.Constant import Constant
 from subcall import runcmd
 
 
@@ -22,43 +23,24 @@ def run(info):
     while True:
         try:
             conn = HTTPConnection(url, timeout=Constant.ConnectTimeout)
-            # check leader exists
-            conn.request("get", "/v1/status/leader")
+            # check health info, etcd case sensitive
+            conn.request("GET", "/health")
             resp = conn.getresponse()
             con = resp.read().decode("UTF-8").strip("")
             # json need to docode too
             try:
-                leader = json.loads(con)
+                health = json.loads(con)
             except Exception as err:
-                leader = ""
+                health = ""
 
-            print("Get leader response:" + str(resp.status) + " " + str(resp.reason) + " " + str(leader))
+            # str(resp.headers)
+            print("Get health response:" + str(resp.status) + " " + str(resp.reason) + " " + str(health))
 
-            conn.request("get", "/v1/status/peers")
-            resp = conn.getresponse()
-            peers = resp.read().decode("UTF-8").strip("")
-            print("Get peers response:" + str(resp.status) + " " + str(resp.reason) + " " + str(leader))
-            if leader != "" and peers != "":
-                peerlist = json.loads(peers)
-                if leader in peerlist:
-
-                    # check leader format
-                    leaderip = leader[:str.find(leader, ":")]
-                    try:
-                        ipv4 = ipaddress.IPv4Address(leaderip)
-                        print("Leader ip check pass: " + str(leaderip))
-
-                        print("Check completed, the cluster is in sync state.")
-                        break
-                    except Exception as err:
-                        print("Found error:" + str(err) + " will quit health check.")
-                        print(traceback.format_exc())
-                        sys.exit(1)
-
-                else:
-                    print("Cluster status checks failed, leader is not in the peerlist.")
+            if (con != "" and isinstance(health, object) and health["health"] == "true"):
+                print("Check completed, the cluster is in sync state.")
+                break
             else:
-                print("Cluster status checks failed, leader or peers empty.")
+                print("Cluster status checks failed, /health info check failed.")
 
         except Exception as err:
             print("Found error:" + str(err) + " while health check, continue loop...")
