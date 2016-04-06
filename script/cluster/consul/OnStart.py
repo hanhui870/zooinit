@@ -25,9 +25,9 @@ def run(info):
     if (info.Localip != info.Masterip):  # slave mode
         args.append("-join=" + info.Masterip)
         # Consul need to wait
-        sec = 3
+        sec = 2
         print("This is a slave node, wait master " + str(sec) + " sec")
-        time.sleep(2)
+        time.sleep(sec)
 
     runcmd.runWithStdoutSync(args)
 
