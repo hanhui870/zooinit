@@ -38,6 +38,9 @@ class Info(object):
     def GetNodename(self):
         return self.Service + "-" + self.Localip
 
+    def GetNodenameOfNode(self, NodeIP):
+        return self.Service + "-" + NodeIP
+
     def GetUUIDMap(self):
         if self.UUIDMap is None:
             return dict()
@@ -62,6 +65,10 @@ if __name__ == "__main__":
     print("info.GetNodename():", info.GetNodename())
     if info.GetNodename() != "etcdCluster-192.168.1.2":
         print("Error: info.GetNodename() != Consul-192.168.1.2")
+
+    print("info.GetNodenameOfNode():", info.GetNodenameOfNode("192.168.1.1"))
+    if info.GetNodenameOfNode("192.168.1.1") != "etcdCluster-192.168.1.1":
+        print("Error: info.GetNodenameOfNode() != Consul-192.168.1.1")
 
     print(info.GetUUIDMap())
     if info.GetUUIDMap()["uuu-dddd-3"] != "192.168.4.223":
