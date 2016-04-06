@@ -71,19 +71,19 @@ func NewEnvInfo(iniobj *ini.File, backend, service string, c *cli.Context) *envI
 	var keyNow string
 	obj.Logger.Println("Service name of cluster is:", obj.Service)
 
-	keyNow = "discover.method"
+	keyNow = "discovery.method"
 	obj.discoveryMethod = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryMethod == "" {
 		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
-	keyNow = "discover.target"
+	keyNow = "discovery.target"
 	obj.discoveryTarget = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryTarget == "" {
 		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")
 	}
 
-	keyNow = "discover.path"
+	keyNow = "discovery.path"
 	obj.discoveryPath = config.GetValueString(keyNow, sec, c)
 	if obj.discoveryPath == "" {
 		obj.Logger.Fatalln("Config of " + keyNow + " is empty.")

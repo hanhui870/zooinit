@@ -94,19 +94,19 @@ func main() {
 	}
 
 	discoverMethod := &cli.StringFlag{
-		Name:  "discover.method",
+		Name:  "discovery.method",
 		Value: "",
 		Usage: "Available: address, may single point failure; dnssrv, this could be a second choise, with dnssrv update api.",
 	}
 
 	discoverTarget := &cli.StringFlag{
-		Name:  "discover.target",
+		Name:  "discovery.target",
 		Value: "",
 		Usage: "Discovery target value to discover other members.",
 	}
 
 	discoverPathPrefix := &cli.StringFlag{
-		Name:  "discover.path.prefix",
+		Name:  "discovery.path.prefix",
 		Value: "",
 		Usage: "Discovery service path prefix registered in etcd boot cluster.",
 	}
