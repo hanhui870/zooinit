@@ -5,7 +5,6 @@ import time
 import json
 import ipaddress
 import traceback
-import etcd
 from http.client import HTTPConnection
 from cluster.info import Info
 from cluster.etcd.Constant import Constant
