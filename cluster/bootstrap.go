@@ -157,7 +157,9 @@ func Bootstrap(c *cli.Context) {
 	initializeClusterDiscoveryInfo()
 
 	// loop wait qurorum size of nodes is registed
-	loopUntilQurorumIsReached()
+	if !IsClusterBootedBefore() {
+		loopUntilQurorumIsReached()
+	}
 
 	// start up local node
 	bootstrapLocalClusterMember()
