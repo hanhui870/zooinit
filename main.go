@@ -83,7 +83,7 @@ func main() {
 	ipInterface := &cli.StringFlag{
 		Name:  "ip.interface",
 		Value: "",
-		Usage: "Ip interface for find ip, with -ip.interface=eth0. wip.method: interface.",
+		Usage: "Ip interface for find ip, with -ip.interface=eth0. ip.method: interface.",
 	}
 
 	// Used for cluster
