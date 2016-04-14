@@ -22,8 +22,6 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(__file__)) + "/library")
 def main():
     utils.initUnbufferedStdoutIO()
 
-    print("Python sys.path:" + str(sys.path))
-
     silent = os.getenv("ZOOINIT_SILENT_ENV_INFO")
     # None or nq True display debug info
     if (silent != None and silent.upper() == "TRUE"):
@@ -32,6 +30,7 @@ def main():
         silent = False
 
     if silent != True:
+        print("Python sys.path:" + str(sys.path))
         print("Zoopy started to run...")
         print("Zoopy PID: " + str(os.getpid()))
         print("PATH now: " + os.getenv("PATH"))
