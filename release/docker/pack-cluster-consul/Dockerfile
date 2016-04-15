@@ -1,4 +1,4 @@
-#构建命令：docker build --no-cache -t zooinit-cluster-consul .
+#构建命令：docker build --no-cache -t haimi:zooinit-cluster-consul .
 #run:
 #version: 0.1.0
 #version: 0.1.0 zooinit+etcd package
