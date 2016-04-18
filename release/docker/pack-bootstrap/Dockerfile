@@ -2,6 +2,7 @@
 #run:
 #version: 0.1.0
 #version: 0.1.0 zooinit+etcd package
+# Copyright 2016 祝景法(Bruce)@haimi.com. www.haimi.com All rights reserved.
 
 #need python, can't scratch
 FROM haimi:base

@@ -1,4 +1,5 @@
 #构建命令：docker build --no-cache -t haimi:zooinit-cluster-zookeeper .
+# Copyright 2016 祝景法(Bruce)@haimi.com. www.haimi.com All rights reserved.
 FROM haimi:zookeeper
 
 #MAINTAINER bruce@haimi.com

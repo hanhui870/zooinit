@@ -1,3 +1,4 @@
+// Copyright 2016 祝景法(Bruce)@haimi.com. www.haimi.com All rights reserved.
 package etcd
 
 import (
@@ -18,8 +19,8 @@ func TestCheckServiceClient(t *testing.T) {
 		t.Log("heal.IsHealth()=", heal.IsHealth())
 	}
 
-	isHealthy, err:=CheckHealth("http://registry.alishui.com:2379")
-	if  isHealthy!= true {
+	isHealthy, err := CheckHealth("http://registry.alishui.com:2379")
+	if isHealthy != true {
 		t.Log("CheckHealth of http://registry.alishui.com:2379/ fasle, please check server is up.", err)
 	} else {
 		t.Log("CheckHealth of http://registry.alishui.com:2379/:", true)
